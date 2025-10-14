@@ -13,6 +13,18 @@ Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+Route::view('worker', 'worker')
+    ->middleware(['auth', 'verified'])
+    ->name('worker');
+
+Route::view('salary', 'salary')
+    ->middleware(['auth', 'verified'])
+    ->name('salary');
+
+Route::view('report', 'report')
+    ->middleware(['auth', 'verified'])
+    ->name('report');
+
 Route::view('posts', 'posts')
     ->middleware(['auth', 'verified'])
     ->name('posts');   

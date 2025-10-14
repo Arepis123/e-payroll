@@ -21,22 +21,26 @@
                 <div class="px-3 py-2 mt-4 in-data-flux-sidebar-collapsed-desktop:hidden">
                     <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wider">{{ __('MAIN') }}</h3>
                 </div>                                
-                <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>                
-                <flux:sidebar.item icon="users" :href="route('dashboard')" :current="request()->routeIs('worker')" wire:navigate>{{ __('Worker') }}</flux:sidebar.item>                
-                <flux:sidebar.item icon="wallet" :href="route('dashboard')" :current="request()->routeIs('salary')" wire:navigate>{{ __('Salary') }}</flux:sidebar.item>
-                <flux:sidebar.item icon="file-text" :href="route('dashboard')" :current="request()->routeIs('report')" wire:navigate>{{ __('Report') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="house" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="users" :href="route('worker')" :current="request()->routeIs('worker')" wire:navigate>{{ __('Worker') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="wallet" :href="route('salary')" :current="request()->routeIs('salary')" wire:navigate>{{ __('Salary') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="file-text" :href="route('report')" :current="request()->routeIs('report')" wire:navigate>{{ __('Report') }}</flux:sidebar.item>
             </flux:sidebar.nav>
 
             <flux:sidebar.spacer />
 
             <flux:sidebar.nav>
+                <flux:sidebar.item icon="settings" :href="route('settings.profile')" wire:navigate>
+                    {{ __('Settings') }}
+                </flux:sidebar.item>
+<!-- 
                 <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
                     {{ __('Repository') }}
                 </flux:sidebar.item>
 
                 <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
                     {{ __('Documentation') }}
-                </flux:sidebar.item>
+                </flux:sidebar.item> -->
             </flux:sidebar.nav>
 
             <!-- Desktop User Menu -->
@@ -58,10 +62,6 @@
                             </div>
                         </div>
                     </flux:menu.radio.group>
-
-                    <flux:menu.separator />
-
-                    <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
 
                     <flux:menu.separator />
 
@@ -108,10 +108,6 @@
                             </div>
                         </div>
                     </flux:menu.radio.group>
-
-                    <flux:menu.separator />
-
-                    <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
 
                     <flux:menu.separator />
 
