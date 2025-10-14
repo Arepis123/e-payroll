@@ -7,24 +7,25 @@
         <flux:sidebar sticky collapsible class="bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700">
             <flux:sidebar.header>
                 <flux:sidebar.brand
-                    href="{{ route('admin.dashboard') }}"
+                    href="{{ route('client.dashboard') }}"
                     wire:navigate
                     logo="{{ asset('favicon.svg') }}"
                     logo:dark="{{ asset('favicon.svg') }}"
                     name="e-Salary CLAB"
-                />                  
+                />
 
                 <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
                 <div class="px-3 py-2 mt-4 in-data-flux-sidebar-collapsed-desktop:hidden">
-                    <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wider">{{ __('MAIN') }}</h3>
-                </div>                                
-                <flux:sidebar.item icon="house" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
-                <flux:sidebar.item icon="users" :href="route('admin.worker')" :current="request()->routeIs('admin.worker')" wire:navigate>{{ __('Worker') }}</flux:sidebar.item>
-                <flux:sidebar.item icon="wallet" :href="route('admin.salary')" :current="request()->routeIs('admin.salary')" wire:navigate>{{ __('Salary') }}</flux:sidebar.item>
-                <flux:sidebar.item icon="file-text" :href="route('admin.report')" :current="request()->routeIs('admin.report')" wire:navigate>{{ __('Report') }}</flux:sidebar.item>
+                    <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wider">{{ __('CLIENT PORTAL') }}</h3>
+                </div>
+                <flux:sidebar.item icon="house" :href="route('client.dashboard')" :current="request()->routeIs('client.dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="users" :href="route('client.workers')" :current="request()->routeIs('client.workers')" wire:navigate>{{ __('My Workers') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="wallet" :href="route('client.payments')" :current="request()->routeIs('client.payments')" wire:navigate>{{ __('Payments') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="document-text" :href="route('client.invoices')" :current="request()->routeIs('client.invoices')" wire:navigate>{{ __('Invoices') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="calendar" :href="route('client.timesheet')" :current="request()->routeIs('client.timesheet')" wire:navigate>{{ __('Timesheet') }}</flux:sidebar.item>
             </flux:sidebar.nav>
 
             <flux:sidebar.spacer />
@@ -33,14 +34,6 @@
                 <flux:sidebar.item icon="settings" :href="route('settings.profile')" wire:navigate>
                     {{ __('Settings') }}
                 </flux:sidebar.item>
-<!-- 
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item> -->
             </flux:sidebar.nav>
 
             <!-- Desktop User Menu -->

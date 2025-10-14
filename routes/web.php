@@ -9,21 +9,30 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Admin Routes
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::view('dashboard', 'admin.dashboard')->name('dashboard');
+    Route::view('worker', 'admin.worker')->name('worker');
+    Route::view('salary', 'admin.salary')->name('salary');
+    Route::view('report', 'admin.report')->name('report');
+});
 
-Route::view('worker', 'worker')
-    ->middleware(['auth', 'verified'])
-    ->name('worker');
+// Client/Contractor Routes
+Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('client.')->group(function () {
+    Route::view('dashboard', 'client.dashboard')->name('dashboard');
+    Route::view('workers', 'client.workers')->name('workers');
+    Route::view('payments', 'client.payments')->name('payments');
+    Route::view('invoices', 'client.invoices')->name('invoices');
+    Route::view('timesheet', 'client.timesheet')->name('timesheet');
+});
 
-Route::view('salary', 'salary')
-    ->middleware(['auth', 'verified'])
-    ->name('salary');
-
-Route::view('report', 'report')
-    ->middleware(['auth', 'verified'])
-    ->name('report');
+// Legacy routes (for backward compatibility - redirect based on role)
+Route::get('dashboard', function () {
+    if (auth()->user()->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect()->route('client.dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::view('posts', 'posts')
     ->middleware(['auth', 'verified'])

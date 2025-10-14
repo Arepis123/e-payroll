@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php artisan:*)"
+      "Bash(php artisan:*)",
+      "Bash(composer:*)",
+      "Bash(php -r \"copy(''https://getcomposer.org/installer'', ''composer-setup.php'');\")",
+      "Bash(php -r:*)",
+      "Bash(php:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
