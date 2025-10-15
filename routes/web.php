@@ -19,12 +19,25 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
 // Client/Contractor Routes
 Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('client.')->group(function () {
-    Route::view('dashboard', 'client.dashboard')->name('dashboard');
-    Route::view('workers', 'client.workers')->name('workers');
-    Route::view('payments', 'client.payments')->name('payments');
-    Route::view('invoices', 'client.invoices')->name('invoices');
-    Route::view('timesheet', 'client.timesheet')->name('timesheet');
+    Route::get('dashboard', [\App\Http\Controllers\Client\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('workers', [\App\Http\Controllers\Client\WorkersController::class, 'index'])->name('workers');
+    Route::get('workers/{worker}', [\App\Http\Controllers\Client\WorkersController::class, 'show'])->name('workers.show');
+    Route::get('timesheet', [\App\Http\Controllers\Client\TimesheetController::class, 'index'])->name('timesheet');
+    Route::post('timesheet', [\App\Http\Controllers\Client\TimesheetController::class, 'store'])->name('timesheet.store');
+    Route::get('timesheet/{id}', [\App\Http\Controllers\Client\TimesheetController::class, 'show'])->name('timesheet.show');
+
+    // Payment routes
+    Route::post('payment/{submission}', [\App\Http\Controllers\Client\PaymentController::class, 'createPayment'])->name('payment.create');
+    Route::get('payment/{submission}/return', [\App\Http\Controllers\Client\PaymentController::class, 'return'])->name('payment.return');
+
+    Route::get('payments', [\App\Http\Controllers\Client\PaymentHistoryController::class, 'index'])->name('payments');
+    Route::get('invoices', [\App\Http\Controllers\Client\InvoiceController::class, 'index'])->name('invoices');
+    Route::get('invoices/{id}', [\App\Http\Controllers\Client\InvoiceController::class, 'show'])->name('invoices.show');
+    Route::get('invoices/{id}/download', [\App\Http\Controllers\Client\InvoiceController::class, 'download'])->name('invoices.download');
 });
+
+// Billplz Webhook (No auth/middleware required for webhooks)
+Route::post('/billplz/callback', [\App\Http\Controllers\Client\PaymentController::class, 'callback'])->name('billplz.callback');
 
 // Legacy routes (for backward compatibility - redirect based on role)
 Route::get('dashboard', function () {

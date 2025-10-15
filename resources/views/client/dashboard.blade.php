@@ -18,16 +18,18 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">My Workers</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">15</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $stats['total_workers'] }}</p>
                     </div>
                     <div class="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
                         <flux:icon.users class="size-6 text-blue-600 dark:text-blue-400" />
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    <span class="text-green-600 dark:text-green-400">12 Active</span>
-                    <span class="text-zinc-600 dark:text-zinc-400">•</span>
-                    <span class="text-orange-600 dark:text-orange-400">3 On Leave</span>
+                    <span class="text-green-600 dark:text-green-400">{{ $stats['active_workers'] }} Active</span>
+                    @if($stats['expiring_soon'] > 0)
+                        <span class="text-zinc-600 dark:text-zinc-400">•</span>
+                        <span class="text-orange-600 dark:text-orange-400">{{ $stats['expiring_soon'] }} Expiring Soon</span>
+                    @endif
                 </div>
             </flux:card>
 
@@ -92,49 +94,33 @@
                     </div>
 
                     <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50">
-                            <div class="flex items-center gap-3">
-                                <flux:avatar size="sm" name="Jefri Aldi Kurniawan" />
-                                <div>
-                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Jefri Aldi Kurniawan</p>
-                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">General Worker • EMP001</p>
+                        @forelse($recentWorkers as $worker)
+                            <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50">
+                                <div class="flex items-center gap-3">
+                                    <flux:avatar size="sm" name="{{ $worker->name }}" />
+                                    <div>
+                                        <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->name }}</p>
+                                        <p class="text-xs text-zinc-600 dark:text-zinc-400">
+                                            {{ $worker->position ?? 'Worker' }} • {{ $worker->ic_number }}
+                                        </p>
+                                        @if($worker->contract_info)
+                                            <p class="text-xs text-zinc-500 dark:text-zinc-500">
+                                                Contract: {{ $worker->contract_info->con_start->format('M d, Y') }} - {{ $worker->contract_info->con_end->format('M d, Y') }}
+                                            </p>
+                                        @endif
+                                    </div>
                                 </div>
+                                @if($worker->contract_info && $worker->contract_info->isActive())
+                                    <flux:badge color="green" size="sm">Active</flux:badge>
+                                @else
+                                    <flux:badge color="zinc" size="sm">Inactive</flux:badge>
+                                @endif
                             </div>
-                            <flux:badge color="green" size="sm">Active</flux:badge>
-                        </div>
-
-                        <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50">
-                            <div class="flex items-center gap-3">
-                                <flux:avatar size="sm" name="Siti Nurhaliza" />
-                                <div>
-                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Siti Nurhaliza</p>
-                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">General Worker • EMP002</p>
-                                </div>
+                        @empty
+                            <div class="p-6 text-center text-zinc-600 dark:text-zinc-400">
+                                <p>No workers found.</p>
                             </div>
-                            <flux:badge color="green" size="sm">Active</flux:badge>
-                        </div>
-
-                        <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50">
-                            <div class="flex items-center gap-3">
-                                <flux:avatar size="sm" name="Ghulam Abbas" />
-                                <div>
-                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Ghulam Abbas</p>
-                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">General Worker • EMP005</p>
-                                </div>
-                            </div>
-                            <flux:badge color="green" size="sm">Active</flux:badge>
-                        </div>
-
-                        <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50">
-                            <div class="flex items-center gap-3">
-                                <flux:avatar size="sm" name="Heri Siswanto" />
-                                <div>
-                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Heri Siswanto</p>
-                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">Carpenter • EMP006</p>
-                                </div>
-                            </div>
-                            <flux:badge color="green" size="sm">Active</flux:badge>
-                        </div>
+                        @endforelse
                     </div>
                 </flux:card>
 

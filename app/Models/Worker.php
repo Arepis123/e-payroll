@@ -4,6 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Worker Model
+ *
+ * READ-ONLY MODEL
+ * This table is from the second database (worker_db) managed by another system.
+ * This payroll system only reads worker data. Do not create, update, or delete records.
+ */
 class Worker extends Model
 {
     /**
@@ -85,11 +92,45 @@ class Worker extends Model
     }
 
     /**
-     * Get the contractor that owns this worker
+     * Get the contractor that owns this worker (current employer)
      */
     public function contractor()
     {
         return $this->belongsTo(Contractor::class, 'wkr_currentemp', 'ctr_clab_no');
+    }
+
+    /**
+     * Get the country/nationality of this worker
+     */
+    public function country()
+    {
+        return $this->belongsTo(Country::class, 'wkr_country', 'cty_id');
+    }
+
+    /**
+     * Get contract worker records for this worker
+     */
+    public function contracts()
+    {
+        return $this->hasMany(ContractWorker::class, 'con_wkr_id', 'wkr_id');
+    }
+
+    /**
+     * Get the active contract for this worker
+     */
+    public function activeContract()
+    {
+        return $this->hasOne(ContractWorker::class, 'con_wkr_id', 'wkr_id')
+            ->where('con_end', '>=', now()->toDateString())
+            ->latest('con_start');
+    }
+
+    /**
+     * Check if worker has an active contract in the system
+     */
+    public function hasActiveContract(): bool
+    {
+        return $this->activeContract()->exists();
     }
 
     /**

@@ -1,0 +1,268 @@
+@php
+    // Calculate salary details
+    $basicSalary = $worker->basic_salary ?? 1700; // Minimum RM 1,700
+    $epfDeduction = $basicSalary * 0.02; // 2% EPF deduction
+    $netSalary = $basicSalary - $epfDeduction;
+
+    // Contract information
+    $contract = $worker->contract_info;
+    $contractActive = $contract && $contract->isActive();
+    $daysRemaining = $contract ? $contract->daysRemaining() : 0;
+@endphp
+
+<x-layouts.app :title="__('Worker Details')">
+    <div class="flex h-full w-full flex-1 flex-col gap-6">
+        <!-- Header with Back Button -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <flux:button variant="ghost" icon="arrow-left" href="{{ route('client.workers') }}" wire:navigate>
+                    Back to Workers
+                </flux:button>
+                <div>
+                    <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $worker->name }}</h1>
+                    <p class="text-sm text-zinc-600 dark:text-zinc-400">Worker ID: {{ $worker->wkr_id }} • Passport: {{ $worker->ic_number }}</p>
+                </div>
+            </div>
+            <div>
+                @if($contractActive)
+                    <flux:badge color="green" size="lg">Active Contract</flux:badge>
+                @else
+                    <flux:badge color="zinc" size="lg">Inactive</flux:badge>
+                @endif
+            </div>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-3">
+            <!-- Main Information (Left - 2 columns) -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Personal Information -->
+                <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Personal Information</h2>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Full Name</p>
+                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Passport Number</p>
+                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->ic_number }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Position/Trade</p>
+                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->position ?? 'General Worker' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Nationality</p>
+                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                                @if($worker->country)
+                                    {{ $worker->country->cty_desc }}
+                                @else
+                                    -
+                                @endif
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Gender</p>
+                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                                @if($worker->wkr_gender == 1)
+                                    Male
+                                @elseif($worker->wkr_gender == 2)
+                                    Female
+                                @else
+                                    {{ $worker->wkr_gender ?? '-' }}
+                                @endif
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Phone</p>
+                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->phone ?? '-' }}</p>
+                        </div>
+                    </div>
+                </flux:card>
+
+                <!-- Contract Information -->
+                @if($contract)
+                    <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
+                        <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Contract Information</h2>
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400">Contract Start Date</p>
+                                <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $contract->con_start->format('F d, Y') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400">Contract End Date</p>
+                                <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $contract->con_end->format('F d, Y') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400">Contract Period</p>
+                                <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $contract->con_period }} months</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400">Days Remaining</p>
+                                <p class="text-base font-medium {{ $daysRemaining < 30 ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-900 dark:text-zinc-100' }}">
+                                    {{ $daysRemaining }} days
+                                    @if($daysRemaining < 30 && $daysRemaining > 0)
+                                        <span class="text-xs">(Expiring Soon)</span>
+                                    @elseif($daysRemaining <= 0)
+                                        <span class="text-xs text-red-600 dark:text-red-400">(Expired)</span>
+                                    @endif
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400">Contract Status</p>
+                                <div class="mt-1">
+                                    @if($contractActive)
+                                        <flux:badge color="green">Active</flux:badge>
+                                    @else
+                                        <flux:badge color="red">Expired</flux:badge>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        @if($daysRemaining > 0 && $daysRemaining < 30)
+                            <div class="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                                <div class="flex gap-3">
+                                    <flux:icon.exclamation-triangle class="size-5 flex-shrink-0 text-orange-600 dark:text-orange-400" />
+                                    <div>
+                                        <p class="text-sm font-medium text-orange-900 dark:text-orange-100">Contract Expiring Soon</p>
+                                        <p class="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                            This worker's contract will expire in {{ $daysRemaining }} days. Please renew the contract or make necessary arrangements.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    </flux:card>
+                @endif
+
+                <!-- Salary Information -->
+                <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Salary Information</h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-3 border-b border-zinc-200 dark:border-zinc-700">
+                            <span class="text-zinc-600 dark:text-zinc-400">Basic Salary</span>
+                            <span class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">RM {{ number_format($basicSalary, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-3 border-b border-zinc-200 dark:border-zinc-700">
+                            <div>
+                                <span class="text-zinc-600 dark:text-zinc-400">EPF Deduction (2%)</span>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-500">Employee Provident Fund</p>
+                            </div>
+                            <span class="text-lg font-semibold text-red-600 dark:text-red-400">- RM {{ number_format($epfDeduction, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-3 bg-green-50 dark:bg-green-900/20 px-4 rounded-lg">
+                            <span class="text-base font-medium text-green-900 dark:text-green-100">Net Salary</span>
+                            <span class="text-2xl font-bold text-green-600 dark:text-green-400">RM {{ number_format($netSalary, 2) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div class="flex gap-3">
+                            <flux:icon.information-circle class="size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                            <div>
+                                <p class="text-sm font-medium text-blue-900 dark:text-blue-100">Salary Policy for Foreign Construction Workers</p>
+                                <p class="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                    Minimum salary: RM 1,700 • EPF deduction: 2% of basic salary
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </flux:card>
+            </div>
+
+            <!-- Sidebar (Right - 1 column) -->
+            <div class="space-y-6">
+                <!-- Quick Stats -->
+                <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Quick Stats</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="rounded-full bg-green-100 dark:bg-green-900/30 p-2">
+                                    <flux:icon.check-circle class="size-5 text-green-600 dark:text-green-400" />
+                                </div>
+                                <span class="text-sm text-zinc-600 dark:text-zinc-400">Status</span>
+                            </div>
+                            @if($contractActive)
+                                <flux:badge color="green">Active</flux:badge>
+                            @else
+                                <flux:badge color="zinc">Inactive</flux:badge>
+                            @endif
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="rounded-full bg-blue-100 dark:bg-blue-900/30 p-2">
+                                    <flux:icon.calendar class="size-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <span class="text-sm text-zinc-600 dark:text-zinc-400">Contract Days Left</span>
+                            </div>
+                            <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $daysRemaining }} days</span>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="rounded-full bg-purple-100 dark:bg-purple-900/30 p-2">
+                                    <flux:icon.wallet class="size-5 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <span class="text-sm text-zinc-600 dark:text-zinc-400">Net Salary</span>
+                            </div>
+                            <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">RM {{ number_format($netSalary, 2) }}</span>
+                        </div>
+                    </div>
+                </flux:card>
+
+                <!-- Actions -->
+                <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Actions</h2>
+                    <div class="space-y-2">
+                        <flux:button variant="primary" class="w-full">
+                            <flux:icon.document-text class="size-4" />
+                            View Payslips
+                        </flux:button>
+                        <flux:button variant="outline" class="w-full">
+                            <flux:icon.calendar class="size-4" />
+                            View Attendance
+                        </flux:button>
+                        <flux:button variant="outline" class="w-full">
+                            <flux:icon.document-duplicate class="size-4" />
+                            Generate Report
+                        </flux:button>
+                    </div>
+                </flux:card>
+
+                <!-- Contact Information -->
+                <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Contact</h2>
+                    <div class="space-y-3">
+                        @if($worker->phone)
+                            <div>
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400">Phone</p>
+                                <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->phone }}</p>
+                            </div>
+                        @endif
+
+                        @if($worker->wkr_address1)
+                            <div>
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400">Address</p>
+                                <p class="text-sm text-zinc-900 dark:text-zinc-100">
+                                    {{ $worker->wkr_address1 }}
+                                    @if($worker->wkr_address2)
+                                        <br>{{ $worker->wkr_address2 }}
+                                    @endif
+                                    @if($worker->wkr_address3)
+                                        <br>{{ $worker->wkr_address3 }}
+                                    @endif
+                                    @if($worker->wkr_pcode || $worker->wkr_state)
+                                        <br>{{ $worker->wkr_pcode }} {{ $worker->wkr_state }}
+                                    @endif
+                                </p>
+                            </div>
+                        @endif
+                    </div>
+                </flux:card>
+            </div>
+        </div>
+    </div>
+</x-layouts.app>

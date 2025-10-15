@@ -4,66 +4,89 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Payment History</h1>
-                <p class="text-sm text-zinc-600 dark:text-zinc-400">View your payment records and history</p>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">View your payment records and transaction history</p>
             </div>
-            <flux:button variant="outline" href="#">
-                <flux:icon.arrow-down-tray class="size-4" />
-                Export Report
-            </flux:button>
         </div>
 
+        @if(session('error') || isset($error))
+            <div class="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+                <p class="text-sm text-red-800 dark:text-red-200">{{ session('error') ?? $error }}</p>
+            </div>
+        @endif
+
+        @if(!isset($error))
         <!-- Statistics Cards -->
         <div class="grid gap-4 md:grid-cols-4">
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">This Month</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 45,200</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                            RM {{ number_format($stats['this_month_amount'], 2) }}
+                        </p>
                     </div>
                     <div class="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3">
                         <flux:icon.wallet class="size-6 text-purple-600 dark:text-purple-400" />
                     </div>
                 </div>
-                <flux:badge color="yellow" size="sm">Pending</flux:badge>
+                @if($stats['this_month_status'] === 'paid')
+                    <flux:badge color="green" size="sm">Paid</flux:badge>
+                @elseif($stats['this_month_status'] === 'pending_payment')
+                    <flux:badge color="orange" size="sm">Pending</flux:badge>
+                @elseif($stats['this_month_status'] === 'overdue')
+                    <flux:badge color="red" size="sm">Overdue</flux:badge>
+                @else
+                    <flux:badge color="zinc" size="sm">No Data</flux:badge>
+                @endif
             </flux:card>
 
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Last Month</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 42,100</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                            RM {{ number_format($stats['last_month_amount'], 2) }}
+                        </p>
                     </div>
                     <div class="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
                         <flux:icon.check-circle class="size-6 text-green-600 dark:text-green-400" />
                     </div>
                 </div>
-                <flux:badge color="green" size="sm">Paid</flux:badge>
+                @if($stats['last_month_amount'] > 0)
+                    <flux:badge color="green" size="sm">Paid</flux:badge>
+                @else
+                    <flux:badge color="zinc" size="sm">No Data</flux:badge>
+                @endif
             </flux:card>
 
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">This Year</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 486,250</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                            RM {{ number_format($stats['this_year_amount'], 2) }}
+                        </p>
                     </div>
                     <div class="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
                         <flux:icon.chart-bar class="size-6 text-blue-600 dark:text-blue-400" />
                     </div>
                 </div>
-                <p class="text-xs text-zinc-600 dark:text-zinc-400">12 payments</p>
+                <p class="text-xs text-zinc-600 dark:text-zinc-400">{{ $stats['this_year_count'] }} payments</p>
             </flux:card>
 
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Avg Monthly</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 40,521</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                            RM {{ number_format($stats['avg_monthly'], 2) }}
+                        </p>
                     </div>
                     <div class="rounded-full bg-orange-100 dark:bg-orange-900/30 p-3">
                         <flux:icon.calculator class="size-6 text-orange-600 dark:text-orange-400" />
                     </div>
                 </div>
-                <p class="text-xs text-zinc-600 dark:text-zinc-400">Based on 2025</p>
+                <p class="text-xs text-zinc-600 dark:text-zinc-400">Based on {{ now()->year }}</p>
             </flux:card>
         </div>
 
@@ -72,11 +95,15 @@
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">All Payments</h2>
                 <div class="flex gap-2">
-                    <flux:select class="w-40">
-                        <flux:select.option>2025</flux:select.option>
-                        <flux:select.option>2024</flux:select.option>
-                        <flux:select.option>2023</flux:select.option>
-                    </flux:select>
+                    <form method="GET" action="{{ route('client.payments') }}">
+                        <flux:select name="year" onchange="this.form.submit()" class="w-32">
+                            @foreach($availableYears as $year)
+                                <option value="{{ $year }}" {{ $year == $selectedYear ? 'selected' : '' }}>
+                                    {{ $year }}
+                                </option>
+                            @endforeach
+                        </flux:select>
+                    </form>
                 </div>
             </div>
 
@@ -84,98 +111,73 @@
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Payment ID</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Month</th>
+                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Transaction ID</th>
+                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Period</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Amount</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Workers</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Payment Date</th>
+                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Method</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                        @forelse($payments as $payment)
                         <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">#PAY-0125</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">January 2025</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 45,200</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">12 workers</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Pending</td>
-                            <td class="py-3">
-                                <flux:badge color="yellow" size="sm">Pending</flux:badge>
+                            <td class="py-3 text-sm font-mono text-zinc-900 dark:text-zinc-100">
+                                {{ $payment->transaction_id ?? $payment->billplz_bill_id ?? 'N/A' }}
+                            </td>
+                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">
+                                {{ $payment->submission->month_year }}
+                            </td>
+                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                RM {{ number_format($payment->amount, 2) }}
+                            </td>
+                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ $payment->submission->total_workers }} workers
+                            </td>
+                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ $payment->completed_at ? $payment->completed_at->format('M d, Y') : 'Pending' }}
+                            </td>
+                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ ucfirst($payment->payment_method) }}
                             </td>
                             <td class="py-3">
-                                <flux:button variant="ghost" size="sm" icon="eye" />
+                                @if($payment->status === 'completed')
+                                    <flux:badge color="green" size="sm">Paid</flux:badge>
+                                @elseif($payment->status === 'pending')
+                                    <flux:badge color="orange" size="sm">Pending</flux:badge>
+                                @elseif($payment->status === 'failed')
+                                    <flux:badge color="red" size="sm">Failed</flux:badge>
+                                @endif
+                            </td>
+                            <td class="py-3">
+                                <flux:button
+                                    variant="ghost"
+                                    size="sm"
+                                    icon="eye"
+                                    href="{{ route('client.timesheet.show', $payment->submission->id) }}"
+                                />
                             </td>
                         </tr>
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">#PAY-1224</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">December 2024</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 42,100</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">11 workers</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Dec 28, 2024</td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Paid</flux:badge>
-                            </td>
-                            <td class="py-3">
-                                <flux:button variant="ghost" size="sm" icon="eye" />
+                        @empty
+                        <tr>
+                            <td colspan="8" class="py-8 text-center text-zinc-600 dark:text-zinc-400">
+                                No payment records found for {{ $selectedYear }}.
                             </td>
                         </tr>
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">#PAY-1124</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">November 2024</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 38,900</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">10 workers</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Nov 25, 2024</td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Paid</flux:badge>
-                            </td>
-                            <td class="py-3">
-                                <flux:button variant="ghost" size="sm" icon="eye" />
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">#PAY-1024</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">October 2024</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 39,500</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">10 workers</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Oct 28, 2024</td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Paid</flux:badge>
-                            </td>
-                            <td class="py-3">
-                                <flux:button variant="ghost" size="sm" icon="eye" />
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">#PAY-0924</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">September 2024</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 41,200</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">11 workers</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Sep 27, 2024</td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Paid</flux:badge>
-                            </td>
-                            <td class="py-3">
-                                <flux:button variant="ghost" size="sm" icon="eye" />
-                            </td>
-                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
-            <div class="mt-4 flex items-center justify-between border-t border-zinc-200 dark:border-zinc-700 pt-4">
-                <p class="text-sm text-zinc-600 dark:text-zinc-400">
-                    Showing 1 to 5 of 12 results
-                </p>
-                <div class="flex gap-2">
-                    <flux:button variant="ghost" size="sm" disabled>Previous</flux:button>
-                    <flux:button variant="ghost" size="sm">1</flux:button>
-                    <flux:button variant="outline" size="sm">2</flux:button>
-                    <flux:button variant="ghost" size="sm">3</flux:button>
-                    <flux:button variant="ghost" size="sm">Next</flux:button>
-                </div>
+            @if($payments->hasPages())
+            <div class="mt-4 border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                {{ $payments->links() }}
             </div>
+            @endif
         </flux:card>
+        @endif
     </div>
 </x-layouts.app>

@@ -8,7 +8,9 @@
       "Bash(php:*)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(python:*)",
+      "WebFetch(domain:www.billplz.com)"
     ],
     "deny": [],
     "ask": []

@@ -136,3 +136,4 @@ This project uses both Flux and Flux Pro (premium UI components). The Flux Pro r
 - `CACHE_STORE=database`: Cache stored in database
 - Vite dev server has CORS enabled for HMR
 - Asset inputs: `resources/css/app.css`, `resources/js/app.js`
+- Bear in mind, from now on, salary for foreign construction worker in Malaysia will start from RM1,700 and there will be A deduction 2% from salary for EPF/KWSP

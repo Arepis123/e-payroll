@@ -109,7 +109,7 @@
                             </th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Employee ID</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Name</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">IC Number</th>
+                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Passport Number</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Position</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Current Client</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Basic Salary</th>

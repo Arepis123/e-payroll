@@ -5,6 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Contractor Model
+ *
+ * READ-ONLY MODEL
+ * This table is from the second database (worker_db) managed by another system.
+ * This payroll system only reads contractor data. Do not create, update, or delete records.
+ */
 class Contractor extends Model
 {
     /**
@@ -84,11 +91,51 @@ class Contractor extends Model
     }
 
     /**
-     * Get the workers associated with this contractor
+     * Get all workers associated with this contractor (from worker_db)
+     * This returns ALL workers currently employed, not just contracted ones
      */
     public function workers(): HasMany
     {
         return $this->hasMany(Worker::class, 'wkr_currentemp', 'ctr_clab_no');
+    }
+
+    /**
+     * Get contracted workers through contract_worker table
+     * This returns ONLY workers with active contracts in the payroll system
+     */
+    public function contractedWorkers()
+    {
+        return $this->hasManyThrough(
+            Worker::class,
+            ContractWorker::class,
+            'con_ctr_clab_no', // Foreign key on contract_worker table
+            'wkr_id',          // Foreign key on workers table
+            'ctr_clab_no',     // Local key on contractors table
+            'con_wkr_id'       // Local key on contract_worker table
+        );
+    }
+
+    /**
+     * Get contract worker records for this contractor
+     */
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(ContractWorker::class, 'con_ctr_clab_no', 'ctr_clab_no');
+    }
+
+    /**
+     * Get only active contracted workers
+     */
+    public function activeContractedWorkers()
+    {
+        return $this->hasManyThrough(
+            Worker::class,
+            ContractWorker::class,
+            'con_ctr_clab_no',
+            'wkr_id',
+            'ctr_clab_no',
+            'con_wkr_id'
+        )->whereDate('con_end', '>=', now());
     }
 
     /**

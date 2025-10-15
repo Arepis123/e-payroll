@@ -1,27 +1,46 @@
-<x-layouts.app :title="__('Timesheet')">
+<x-layouts.app :title="__('Timesheet Management')">
     <div class="flex h-full w-full flex-1 flex-col gap-6">
         <!-- Page Header -->
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Timesheet Management</h1>
-                <p class="text-sm text-zinc-600 dark:text-zinc-400">Submit worker attendance and hours</p>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">Submit monthly payroll with overtime hours</p>
             </div>
-            <flux:button variant="primary" href="#">
-                <flux:icon.plus class="size-4" />
-                Submit Timesheet
-            </flux:button>
         </div>
 
+        @if(session('success'))
+            <div class="rounded-lg bg-green-50 dark:bg-green-900/20 p-4 border border-green-200 dark:border-green-800">
+                <p class="text-sm text-green-800 dark:text-green-200">{{ session('success') }}</p>
+            </div>
+        @endif
+
+        @if(session('error') || isset($error))
+            <div class="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+                <p class="text-sm text-red-800 dark:text-red-200">{{ session('error') ?? $error }}</p>
+            </div>
+        @endif
+
+        @if(!isset($error))
         <!-- Current Month Info -->
         <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
             <div class="flex items-center justify-between">
                 <div>
-                    <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{{ now()->format('F Y') }} Timesheet</h3>
+                    <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{{ $period['month_name'] }} {{ $period['year'] }} Payroll</h3>
                     <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-                        Submission deadline: <span class="font-semibold text-orange-600 dark:text-orange-400">{{ now()->format('F 20, Y') }}</span>
+                        Payment deadline: <span class="font-semibold {{ $period['days_until_deadline'] < 7 ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400' }}">
+                            {{ $period['deadline']->format('F d, Y') }} ({{ $period['days_until_deadline'] }} days remaining)
+                        </span>
                     </p>
                 </div>
-                <flux:badge color="orange" size="lg">Pending Submission</flux:badge>
+                @if($currentSubmission->status === 'draft')
+                    <flux:badge color="zinc" size="lg">Draft</flux:badge>
+                @elseif($currentSubmission->status === 'pending_payment')
+                    <flux:badge color="orange" size="lg">Pending Payment</flux:badge>
+                @elseif($currentSubmission->status === 'paid')
+                    <flux:badge color="green" size="lg">Paid</flux:badge>
+                @elseif($currentSubmission->status === 'overdue')
+                    <flux:badge color="red" size="lg">Overdue</flux:badge>
+                @endif
             </div>
         </flux:card>
 
@@ -30,258 +49,222 @@
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Submissions</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $stats['total_submissions'] }}</p>
+                    </div>
+                    <flux:icon.document-text class="size-8 text-blue-600 dark:text-blue-400" />
+                </div>
+            </flux:card>
+
+            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Paid</p>
+                        <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ $stats['paid_submissions'] }}</p>
+                    </div>
+                    <flux:icon.check-circle class="size-8 text-green-600 dark:text-green-400" />
+                </div>
+            </flux:card>
+
+            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Pending</p>
+                        <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ $stats['pending_submissions'] }}</p>
+                    </div>
+                    <flux:icon.clock class="size-8 text-orange-600 dark:text-orange-400" />
+                </div>
+            </flux:card>
+
+            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Workers</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">15</p>
+                        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $workers->count() }}</p>
                     </div>
-                    <flux:icon.users class="size-8 text-blue-600 dark:text-blue-400" />
-                </div>
-            </flux:card>
-
-            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Working Days</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">22</p>
-                    </div>
-                    <flux:icon.calendar class="size-8 text-green-600 dark:text-green-400" />
-                </div>
-            </flux:card>
-
-            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Hours</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">2,640</p>
-                    </div>
-                    <flux:icon.clock class="size-8 text-purple-600 dark:text-purple-400" />
-                </div>
-            </flux:card>
-
-            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Overtime Hours</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">120</p>
-                    </div>
-                    <flux:icon.fire class="size-8 text-orange-600 dark:text-orange-400" />
+                    <flux:icon.users class="size-8 text-purple-600 dark:text-purple-400" />
                 </div>
             </flux:card>
         </div>
 
-        <!-- Timesheet Entry Form -->
+        <!-- Payroll Entry Form -->
         <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-            <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Worker Attendance & Hours</h2>
+            <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">{{ $period['month_name'] }} {{ $period['year'] }} - Worker Hours & Overtime</h2>
 
-            <!-- Month Selector -->
-            <div class="mb-6 flex items-center gap-4">
-                <flux:select class="w-48">
-                    <flux:select.option>January 2025</flux:select.option>
-                    <flux:select.option>December 2024</flux:select.option>
-                    <flux:select.option>November 2024</flux:select.option>
-                </flux:select>
-                <flux:button variant="outline" size="sm">
-                    <flux:icon.arrow-path class="size-4" />
-                    Load Data
-                </flux:button>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Worker Name</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Employee ID</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Days Worked</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Regular Hours</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Overtime Hours</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Leave Days</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3">
-                                <div class="flex items-center gap-3">
-                                    <flux:avatar size="sm" name="Jefri Aldi Kurniawan" />
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">Jefri Aldi Kurniawan</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">EMP001</td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="22" min="0" max="31" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-24" value="176" min="0" step="0.5" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="8" min="0" step="0.5" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="0" min="0" />
-                            </td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Complete</flux:badge>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3">
-                                <div class="flex items-center gap-3">
-                                    <flux:avatar size="sm" name="Siti Nurhaliza" />
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">Siti Nurhaliza</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">EMP002</td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="22" min="0" max="31" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-24" value="176" min="0" step="0.5" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="0" min="0" step="0.5" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="0" min="0" />
-                            </td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Complete</flux:badge>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3">
-                                <div class="flex items-center gap-3">
-                                    <flux:avatar size="sm" name="Ghulam Abbas" />
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">Ghulam Abbas</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">EMP005</td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="20" min="0" max="31" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-24" value="160" min="0" step="0.5" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="4" min="0" step="0.5" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="2" min="0" />
-                            </td>
-                            <td class="py-3">
-                                <flux:badge color="yellow" size="sm">Pending</flux:badge>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3">
-                                <div class="flex items-center gap-3">
-                                    <flux:avatar size="sm" name="Heri Siswanto" />
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">Heri Siswanto</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">EMP006</td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="22" min="0" max="31" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-24" value="176" min="0" step="0.5" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="12" min="0" step="0.5" />
-                            </td>
-                            <td class="py-3">
-                                <flux:input type="number" class="w-20" value="0" min="0" />
-                            </td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Complete</flux:badge>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="mt-6 flex justify-between items-center">
-                <div class="flex gap-2">
-                    <flux:button variant="outline">
-                        <flux:icon.arrow-down-tray class="size-4" />
-                        Import from Excel
-                    </flux:button>
-                    <flux:button variant="ghost">
-                        <flux:icon.arrow-path class="size-4" />
-                        Reset
-                    </flux:button>
+            <div class="mb-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
+                <div class="flex gap-3">
+                    <flux:icon.information-circle class="size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                    <div class="text-sm text-blue-900 dark:text-blue-100">
+                        <p class="font-medium">Overtime Rates:</p>
+                        <ul class="mt-1 text-xs text-blue-700 dark:text-blue-300">
+                            <li>• Normal Day: 1.5x hourly rate</li>
+                            <li>• Rest Day: 2x hourly rate</li>
+                            <li>• Public Holiday: 3x hourly rate</li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <flux:button variant="outline">
-                        Save Draft
-                    </flux:button>
-                    <flux:button variant="primary">
+            </div>
+
+            <form method="POST" action="{{ route('client.timesheet.store') }}" id="timesheetForm">
+                @csrf
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-zinc-200 dark:border-zinc-700">
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Worker Name</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Employee ID</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Basic Salary</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Normal (hrs)</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Rest Day (hrs)</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Public (hrs)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                            @foreach($workersData as $index => $worker)
+                            <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                <td class="py-3">
+                                    <div class="flex items-center gap-3">
+                                        <flux:avatar size="sm" name="{{ $worker->worker_name }}" />
+                                        <span class="text-sm text-zinc-900 dark:text-zinc-100">{{ $worker->worker_name }}</span>
+                                    </div>
+                                    <input type="hidden" name="workers[{{ $index }}][worker_id]" value="{{ $worker->worker_id }}">
+                                    <input type="hidden" name="workers[{{ $index }}][worker_name]" value="{{ $worker->worker_name }}">
+                                    <input type="hidden" name="workers[{{ $index }}][worker_passport]" value="{{ $worker->worker_passport }}">
+                                </td>
+                                <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->worker_id }}</td>
+                                <td class="py-3">
+                                    <flux:input
+                                        type="number"
+                                        name="workers[{{ $index }}][basic_salary]"
+                                        class="w-32"
+                                        value="{{ $worker->basic_salary }}"
+                                        min="1700"
+                                        step="0.01"
+                                        readonly
+                                    />
+                                </td>
+                                <td class="py-3">
+                                    <flux:input
+                                        type="number"
+                                        name="workers[{{ $index }}][ot_normal_hours]"
+                                        class="w-24"
+                                        value="{{ $worker->ot_normal_hours ?? 0 }}"
+                                        min="0"
+                                        step="0.5"
+                                    />
+                                </td>
+                                <td class="py-3">
+                                    <flux:input
+                                        type="number"
+                                        name="workers[{{ $index }}][ot_rest_hours]"
+                                        class="w-24"
+                                        value="{{ $worker->ot_rest_hours ?? 0 }}"
+                                        min="0"
+                                        step="0.5"
+                                    />
+                                </td>
+                                <td class="py-3">
+                                    <flux:input
+                                        type="number"
+                                        name="workers[{{ $index }}][ot_public_hours]"
+                                        class="w-24"
+                                        value="{{ $worker->ot_public_hours ?? 0 }}"
+                                        min="0"
+                                        step="0.5"
+                                    />
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-6 flex justify-end items-center gap-2">
+                    @if($currentSubmission->status === 'draft' || $currentSubmission->status === 'pending_payment')
+                    <flux:button type="submit" variant="primary">
                         <flux:icon.check class="size-4" />
-                        Submit Timesheet
+                        Submit Payroll
                     </flux:button>
+                    @endif
                 </div>
-            </div>
+            </form>
         </flux:card>
 
         <!-- Submission History -->
         <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-            <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Submission History</h2>
+            <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Recent Submissions</h2>
 
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Month</th>
+                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Period</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Submitted Date</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Workers</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Hours</th>
+                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Amount</th>
+                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Penalty</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                        @forelse($recentSubmissions as $submission)
                         <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">January 2025</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Not submitted</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">15</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">-</td>
-                            <td class="py-3">
-                                <flux:badge color="orange" size="sm">Pending</flux:badge>
+                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $submission->month_year }}</td>
+                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ $submission->submitted_at ? $submission->submitted_at->format('M d, Y') : 'Not submitted' }}
+                            </td>
+                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $submission->total_workers }}</td>
+                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                RM {{ number_format($submission->total_amount, 2) }}
+                            </td>
+                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                                @if($submission->has_penalty)
+                                    <span class="text-red-600 dark:text-red-400">+ RM {{ number_format($submission->penalty_amount, 2) }}</span>
+                                @else
+                                    -
+                                @endif
                             </td>
                             <td class="py-3">
-                                <flux:button variant="ghost" size="sm">Edit</flux:button>
+                                @if($submission->status === 'draft')
+                                    <flux:badge color="zinc" size="sm">Draft</flux:badge>
+                                @elseif($submission->status === 'pending_payment')
+                                    <flux:badge color="orange" size="sm">Pending Payment</flux:badge>
+                                @elseif($submission->status === 'paid')
+                                    <flux:badge color="green" size="sm">Paid</flux:badge>
+                                @elseif($submission->status === 'overdue')
+                                    <flux:badge color="red" size="sm">Overdue</flux:badge>
+                                @endif
+                            </td>
+                            <td class="py-3">
+                                <div class="flex gap-2">
+                                    @if($submission->status === 'pending_payment' || $submission->status === 'overdue')
+                                        <form method="POST" action="{{ route('client.payment.create', $submission->id) }}" class="inline">
+                                            @csrf
+                                            <flux:button type="submit" variant="primary" size="sm">
+                                                <flux:icon.credit-card class="size-4" />
+                                                Pay Now
+                                            </flux:button>
+                                        </form>
+                                    @endif
+                                    <flux:button variant="ghost" size="sm" icon="eye" href="{{ route('client.timesheet.show', $submission->id) }}">
+                                        View
+                                    </flux:button>
+                                </div>
                             </td>
                         </tr>
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">December 2024</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Dec 15, 2024</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">11</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">1,936 hrs</td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Approved</flux:badge>
-                            </td>
-                            <td class="py-3">
-                                <flux:button variant="ghost" size="sm" icon="eye">View</flux:button>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-zinc-600 dark:text-zinc-400">
+                                No submissions yet.
                             </td>
                         </tr>
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">November 2024</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Nov 18, 2024</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">10</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">1,760 hrs</td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Approved</flux:badge>
-                            </td>
-                            <td class="py-3">
-                                <flux:button variant="ghost" size="sm" icon="eye">View</flux:button>
-                            </td>
-                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
         </flux:card>
+        @endif
     </div>
 </x-layouts.app>
