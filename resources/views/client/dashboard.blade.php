@@ -1,9 +1,9 @@
-<x-layouts.app :title="__('Client Dashboard')">
+<x-layouts.app :title="__('Dashboard')">
     <div class="flex h-full w-full flex-1 flex-col gap-6">
         <!-- Page Header -->
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Client Dashboard</h1>
+                <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Dashboard</h1>
                 <p class="text-sm text-zinc-600 dark:text-zinc-400">Welcome back, {{ auth()->user()->company_name ?? auth()->user()->name }}</p>
             </div>
             <div class="text-sm text-zinc-600 dark:text-zinc-400">
@@ -38,14 +38,18 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">This Month</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 45,200</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($paymentStats['this_month_amount'], 2) }}</p>
                     </div>
                     <div class="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3">
                         <flux:icon.wallet class="size-6 text-purple-600 dark:text-purple-400" />
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    <span class="text-zinc-600 dark:text-zinc-400">Expected payment date: Jan 25</span>
+                    @if($paymentStats['this_month_deadline'])
+                        <span class="text-zinc-600 dark:text-zinc-400">Payment deadline: {{ $paymentStats['this_month_deadline']->format('M d') }}</span>
+                    @else
+                        <span class="text-zinc-600 dark:text-zinc-400">No submission for this month</span>
+                    @endif
                 </div>
             </flux:card>
 
@@ -54,14 +58,18 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Pending Approvals</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">3</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $paymentStats['pending_approvals'] }}</p>
                     </div>
                     <div class="rounded-full bg-orange-100 dark:bg-orange-900/30 p-3">
                         <flux:icon.clock class="size-6 text-orange-600 dark:text-orange-400" />
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    <span class="text-orange-600 dark:text-orange-400">Requires your attention</span>
+                    @if($paymentStats['pending_approvals'] > 0)
+                        <span class="text-orange-600 dark:text-orange-400">Requires your attention</span>
+                    @else
+                        <span class="text-zinc-600 dark:text-zinc-400">All caught up</span>
+                    @endif
                 </div>
             </flux:card>
 
@@ -70,14 +78,14 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Paid This Year</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 486,250</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($paymentStats['year_to_date_paid'], 2) }}</p>
                     </div>
                     <div class="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
                         <flux:icon.check-circle class="size-6 text-green-600 dark:text-green-400" />
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    <span class="text-zinc-600 dark:text-zinc-400">January - December 2025</span>
+                    <span class="text-zinc-600 dark:text-zinc-400">January - {{ now()->format('F') }} {{ now()->year }}</span>
                 </div>
             </flux:card>
         </div>
@@ -142,30 +150,35 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                                <tr>
-                                    <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">January 2025</td>
-                                    <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 45,200</td>
-                                    <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">12 workers</td>
-                                    <td class="py-3">
-                                        <flux:badge color="yellow" size="sm">Pending</flux:badge>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">December 2024</td>
-                                    <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 42,100</td>
-                                    <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">11 workers</td>
-                                    <td class="py-3">
-                                        <flux:badge color="green" size="sm">Paid</flux:badge>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">November 2024</td>
-                                    <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 38,900</td>
-                                    <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">10 workers</td>
-                                    <td class="py-3">
-                                        <flux:badge color="green" size="sm">Paid</flux:badge>
-                                    </td>
-                                </tr>
+                                @forelse($recentPayments as $payment)
+                                    <tr>
+                                        <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $payment->month_year }}</td>
+                                        <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                            RM {{ number_format($payment->total_with_penalty, 2) }}
+                                            @if($payment->has_penalty)
+                                                <span class="text-xs text-orange-600 dark:text-orange-400">(+8% penalty)</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $payment->total_workers }} {{ Str::plural('worker', $payment->total_workers) }}</td>
+                                        <td class="py-3">
+                                            @if($payment->status === 'paid')
+                                                <flux:badge color="green" size="sm">Paid</flux:badge>
+                                            @elseif($payment->status === 'pending_payment')
+                                                <flux:badge color="yellow" size="sm">Pending Payment</flux:badge>
+                                            @elseif($payment->status === 'overdue')
+                                                <flux:badge color="red" size="sm">Overdue</flux:badge>
+                                            @else
+                                                <flux:badge color="zinc" size="sm">{{ ucfirst($payment->status) }}</flux:badge>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="py-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+                                            No payment history available
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -197,29 +210,52 @@
                 <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                     <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Notifications</h2>
                     <div class="space-y-3">
-                        <div class="flex gap-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-3">
-                            <flux:icon.exclamation-triangle class="size-5 flex-shrink-0 text-orange-600 dark:text-orange-400" />
-                            <div>
-                                <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Timesheet Reminder</p>
-                                <p class="text-xs text-zinc-600 dark:text-zinc-400">Submit January timesheet before 20th</p>
-                            </div>
-                        </div>
+                        @php
+                            $hasNotifications = false;
+                        @endphp
 
-                        <div class="flex gap-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
-                            <flux:icon.information-circle class="size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
-                            <div>
-                                <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Payment Processed</p>
-                                <p class="text-xs text-zinc-600 dark:text-zinc-400">December payment completed</p>
+                        @if($paymentStats['this_month_deadline'] && $paymentStats['this_month_deadline']->isAfter(now()) && $paymentStats['this_month_deadline']->diffInDays(now()) <= 7)
+                            @php $hasNotifications = true; @endphp
+                            <div class="flex gap-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-3">
+                                <flux:icon.exclamation-triangle class="size-5 flex-shrink-0 text-orange-600 dark:text-orange-400" />
+                                <div>
+                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Payment Deadline Approaching</p>
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">Payment due {{ $paymentStats['this_month_deadline']->format('M d, Y') }}</p>
+                                </div>
                             </div>
-                        </div>
+                        @endif
 
-                        <div class="flex gap-3 rounded-lg bg-green-50 dark:bg-green-900/20 p-3">
-                            <flux:icon.check-circle class="size-5 flex-shrink-0 text-green-600 dark:text-green-400" />
-                            <div>
-                                <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Invoice Generated</p>
-                                <p class="text-xs text-zinc-600 dark:text-zinc-400">January invoice is ready</p>
+                        @if($stats['expiring_soon'] > 0)
+                            @php $hasNotifications = true; @endphp
+                            <div class="flex gap-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-3">
+                                <flux:icon.exclamation-triangle class="size-5 flex-shrink-0 text-orange-600 dark:text-orange-400" />
+                                <div>
+                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Contracts Expiring Soon</p>
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">{{ $stats['expiring_soon'] }} {{ Str::plural('contract', $stats['expiring_soon']) }} expiring within 30 days</p>
+                                </div>
                             </div>
-                        </div>
+                        @endif
+
+                        @if($paymentStats['pending_approvals'] > 0)
+                            @php $hasNotifications = true; @endphp
+                            <div class="flex gap-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
+                                <flux:icon.information-circle class="size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                                <div>
+                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Pending Submissions</p>
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">{{ $paymentStats['pending_approvals'] }} {{ Str::plural('submission', $paymentStats['pending_approvals']) }} awaiting payment</p>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if(!$hasNotifications)
+                            <div class="flex gap-3 rounded-lg bg-green-50 dark:bg-green-900/20 p-3">
+                                <flux:icon.check-circle class="size-5 flex-shrink-0 text-green-600 dark:text-green-400" />
+                                <div>
+                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">All Caught Up</p>
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">No pending notifications</p>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </flux:card>
 

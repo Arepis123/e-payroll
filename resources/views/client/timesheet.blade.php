@@ -91,16 +91,37 @@
         <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
             <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">{{ $period['month_name'] }} {{ $period['year'] }} - Worker Hours & Overtime</h2>
 
-            <div class="mb-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
-                <div class="flex gap-3">
-                    <flux:icon.information-circle class="size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
-                    <div class="text-sm text-blue-900 dark:text-blue-100">
-                        <p class="font-medium">Overtime Rates:</p>
-                        <ul class="mt-1 text-xs text-blue-700 dark:text-blue-300">
-                            <li>• Normal Day: 1.5x hourly rate</li>
-                            <li>• Rest Day: 2x hourly rate</li>
-                            <li>• Public Holiday: 3x hourly rate</li>
-                        </ul>
+            <!-- Calculation Information -->
+            <div class="mb-4 grid gap-3 lg:grid-cols-2">
+                <!-- Salary Breakdown Info -->
+                <div class="rounded-lg bg-green-50 dark:bg-green-900/20 p-4 border border-green-200 dark:border-green-800">
+                    <div class="flex gap-3">
+                        <flux:icon.currency-dollar class="size-5 flex-shrink-0 text-green-600 dark:text-green-400" />
+                        <div class="text-sm text-green-900 dark:text-green-100">
+                            <p class="font-medium">Salary Calculation (Based on RM 1,700 minimum):</p>
+                            <div class="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-green-700 dark:text-green-300">
+                                <div><strong>Worker Receives:</strong></div>
+                                <div>RM 1,657.50 (Basic - EPF 2% - SOCSO 0.5%)</div>
+                                <div><strong>System Collects:</strong></div>
+                                <div>RM 1,763.75 (Basic + Employer EPF 2% + Employer SOCSO 1.75%)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overtime Rates Info -->
+                <div class="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
+                    <div class="flex gap-3">
+                        <flux:icon.clock class="size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                        <div class="text-sm text-blue-900 dark:text-blue-100">
+                            <p class="font-medium">Overtime Rates (Hourly Rate: RM 8.17):</p>
+                            <div class="mt-2 grid grid-cols-3 gap-x-4 gap-y-1 text-xs text-blue-700 dark:text-blue-300">
+                                <div><strong>Normal Day:</strong> RM 12.26/hr (1.5x)</div>
+                                <div><strong>Rest Day:</strong> RM 16.34/hr (2.0x)</div>
+                                <div><strong>Public Holiday:</strong> RM 24.51/hr (3.0x)</div>
+                            </div>
+                            <p class="mt-2 text-xs text-blue-600 dark:text-blue-400 italic">Note: This month's OT is calculated now but paid NEXT month. EPF/SOCSO applies to total (Basic + Previous Month OT)</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -143,7 +164,7 @@
                                         readonly
                                     />
                                 </td>
-                                <td class="py-3">
+                                <td class="py-3 px-2">
                                     <flux:input
                                         type="number"
                                         name="workers[{{ $index }}][ot_normal_hours]"
@@ -153,7 +174,7 @@
                                         step="0.5"
                                     />
                                 </td>
-                                <td class="py-3">
+                                <td class="py-3 px-2">
                                     <flux:input
                                         type="number"
                                         name="workers[{{ $index }}][ot_rest_hours]"
@@ -163,7 +184,7 @@
                                         step="0.5"
                                     />
                                 </td>
-                                <td class="py-3">
+                                <td class="py-3 px-2">
                                     <flux:input
                                         type="number"
                                         name="workers[{{ $index }}][ot_public_hours]"

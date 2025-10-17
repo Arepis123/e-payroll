@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\PayrollSubmission;
 use App\Services\ContractWorkerService;
 use Illuminate\Http\Request;
 
@@ -33,6 +34,13 @@ class DashboardController extends Controller
                     'expiring_soon' => 0,
                 ],
                 'expiringContracts' => collect([]),
+                'paymentStats' => [
+                    'this_month_amount' => 0,
+                    'this_month_deadline' => null,
+                    'pending_approvals' => 0,
+                    'year_to_date_paid' => 0,
+                ],
+                'recentPayments' => collect([]),
             ]);
         }
 
@@ -60,6 +68,49 @@ class DashboardController extends Controller
         // Get recent workers (limit to 4 for dashboard)
         $recentWorkers = $workers->take(4);
 
-        return view('client.dashboard', compact('workers', 'recentWorkers', 'stats', 'expiringContracts'));
+        // Get payment statistics
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+
+        // Get this month's submission
+        $thisMonthSubmission = PayrollSubmission::byContractor($clabNo)
+            ->forMonth($currentMonth, $currentYear)
+            ->first();
+
+        // Get pending approvals (draft or pending_payment status)
+        $pendingApprovals = PayrollSubmission::byContractor($clabNo)
+            ->whereIn('status', ['draft', 'pending_payment'])
+            ->count();
+
+        // Get year to date paid amount
+        $yearToDatePaid = PayrollSubmission::byContractor($clabNo)
+            ->where('year', $currentYear)
+            ->where('status', 'paid')
+            ->sum('total_amount');
+
+        $paymentStats = [
+            'this_month_amount' => $thisMonthSubmission ? $thisMonthSubmission->total_with_penalty : 0,
+            'this_month_deadline' => $thisMonthSubmission ? $thisMonthSubmission->payment_deadline : null,
+            'this_month_workers' => $thisMonthSubmission ? $thisMonthSubmission->total_workers : 0,
+            'pending_approvals' => $pendingApprovals,
+            'year_to_date_paid' => $yearToDatePaid,
+        ];
+
+        // Get recent payments (last 3 months)
+        $recentPayments = PayrollSubmission::byContractor($clabNo)
+            ->with('payment')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->take(3)
+            ->get();
+
+        return view('client.dashboard', compact(
+            'workers',
+            'recentWorkers',
+            'stats',
+            'expiringContracts',
+            'paymentStats',
+            'recentPayments'
+        ));
     }
 }

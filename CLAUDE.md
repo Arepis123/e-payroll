@@ -129,6 +129,90 @@ php artisan view:cache
 
 This project uses both Flux and Flux Pro (premium UI components). The Flux Pro repository requires authentication via `composer.fluxui.dev`. Custom Flux icons and components are in `resources/views/flux/`.
 
+## Salary & Payment Calculation
+
+This system is designed for managing foreign construction worker payroll in Malaysia, following official regulations and formulas.
+
+### Payment Formula Reference
+The official payment calculation formulas are documented in: `public/FORMULA PENGIRAAN GAJI DAN OVERTIME.csv`
+
+### Payment Calculation Service
+Use `App\Services\PaymentCalculatorService` for all salary and overtime calculations. This service implements the official Malaysian labor regulations.
+
+### Salary Components (Based on RM 1,700 minimum)
+
+**Worker Deductions:**
+- EPF/KWSP (Worker): 2% = RM 34.00
+- PERKESO/SOCSO (Worker): 0.5% = RM 8.50
+- **Total Worker Deductions: RM 42.50**
+
+**Employer Contributions:**
+- EPF/KWSP (Employer): 2% = RM 34.00
+- PERKESO/SOCSO (Employer): 1.75% = RM 29.75
+- **Total Employer Contributions: RM 63.75**
+
+**Payment Breakdown:**
+- **Gaji Pokok (Basic Salary)**: RM 1,700.00
+- **Gaji Bersih (Net Salary)**: RM 1,700.00 - RM 42.50 = **RM 1,657.50** (what worker receives)
+- **Total Payment to CLAB**: RM 1,700.00 + RM 63.75 = **RM 1,763.75** (what system collects)
+
+### Overtime Calculation Formulas
+
+**Rate Calculation:**
+- **Daily Rate (ORP)**: Basic Salary ÷ 26 working days = RM 65.38
+- **Hourly Rate (HRP)**: Daily Rate ÷ 8 hours = RM 8.17
+
+**Overtime Multipliers:**
+- **Hari Biasa (Weekday OT)**: Hourly Rate × 1.5 = RM 12.26/hour
+- **Cuti Rehat (Rest Day OT)**: Hourly Rate × 2.0 = RM 16.34/hour
+- **Cuti Umum (Public Holiday OT)**: Hourly Rate × 3.0 = RM 24.51/hour
+
+### Using PaymentCalculatorService
+
+```php
+use App\Services\PaymentCalculatorService;
+
+$calculator = new PaymentCalculatorService();
+
+// Calculate complete worker payment
+$payment = $calculator->calculateWorkerPayment(
+    basicSalary: 1700,
+    weekdayOTHours: 10,
+    restDayOTHours: 8,
+    publicHolidayOTHours: 0
+);
+
+// Get formatted summary
+$summary = $calculator->getPaymentSummary($payment);
+
+// Access specific calculations
+$netSalary = $calculator->calculateNetSalary(1700);
+$totalToCLAB = $calculator->calculateTotalPaymentToCLAB(1700);
+$overtimeRate = $calculator->calculateWeekdayOTRate(1700);
+```
+
+### PayrollWorker Model
+The `PayrollWorker` model has a `calculateSalary()` method that automatically calculates all salary components:
+
+```php
+$worker = new PayrollWorker([
+    'basic_salary' => 1700,
+    'ot_normal_hours' => 10,
+    'ot_rest_hours' => 8,
+    'ot_public_hours' => 0,
+]);
+
+$worker->calculateSalary(); // Calculates all fields automatically
+$worker->save();
+```
+
+### Important Notes
+- Minimum salary for foreign construction workers: **RM 1,700**
+- This system collects: **Basic Salary + Employer Contributions**
+- The system owner deducts worker EPF/SOCSO from the RM 1,700 and pays the net amount to workers
+- All calculations follow Malaysian labor regulations
+- Use `PaymentCalculatorService` for consistency across the application
+
 ## Important Configuration
 
 - `SESSION_DRIVER=database`: Sessions stored in database, not files
@@ -136,4 +220,3 @@ This project uses both Flux and Flux Pro (premium UI components). The Flux Pro r
 - `CACHE_STORE=database`: Cache stored in database
 - Vite dev server has CORS enabled for HMR
 - Asset inputs: `resources/css/app.css`, `resources/js/app.js`
-- Bear in mind, from now on, salary for foreign construction worker in Malaysia will start from RM1,700 and there will be A deduction 2% from salary for EPF/KWSP

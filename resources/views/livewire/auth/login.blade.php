@@ -44,6 +44,6 @@
     </form>
 
     <div class="text-center text-sm text-zinc-600 dark:text-zinc-400">
-        {{ __('Please use your credentials from the main system to log in.') }}
+        {{ __('Please use your credentials from the e-CLAB Portal to log in.') }}
     </div>
 </div>

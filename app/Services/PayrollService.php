@@ -47,9 +47,14 @@ class PayrollService
     /**
      * Create or update payroll submission with workers data
      *
-     * IMPORTANT: OT payment is deferred to next month
-     * - Current month OT is stored but not paid this month
-     * - Previous month OT is included in this month's payment
+     * Payment Calculation (based on FORMULA PENGIRAAN GAJI DAN OVERTIME.csv):
+     * - System collects: Basic Salary + Employer Contributions (EPF + SOCSO) + PREVIOUS Month OT
+     * - Worker receives: Basic Salary - Worker Deductions (EPF + SOCSO) + PREVIOUS Month OT
+     *
+     * IMPORTANT: OT Payment Deferral
+     * - Current month OT is CALCULATED and STORED but NOT PAID this month
+     * - Previous month OT is INCLUDED in this month's payment
+     * - This ensures OT is verified before payment
      */
     public function savePayrollSubmission(string $clabNo, array $workersData): PayrollSubmission
     {
@@ -92,6 +97,7 @@ class PayrollService
             $payrollWorker->calculateSalary($previousMonthOt);
             $payrollWorker->save();
 
+            // Total amount is what the system collects (Gross + Employer contributions)
             $totalAmount += $payrollWorker->total_payment;
         }
 
@@ -156,6 +162,7 @@ class PayrollService
     public function calculateEstimatedPayroll(string $clabNo, ContractWorkerService $contractWorkerService): array
     {
         $workers = $contractWorkerService->getContractedWorkers($clabNo);
+        $calculator = app(PaymentCalculatorService::class);
 
         $estimatedTotal = 0;
         $workerEstimates = [];
@@ -163,18 +170,8 @@ class PayrollService
         foreach ($workers as $worker) {
             $basicSalary = $worker->basic_salary ?? 1700;
 
-            // Estimate without overtime (minimum payment)
-            $grossSalary = $basicSalary;
-            $epfEmployee = $grossSalary * 0.02;
-            $socsoEmployee = $grossSalary * 0.005;
-            $totalDeductions = $epfEmployee + $socsoEmployee;
-            $netSalary = $grossSalary - $totalDeductions;
-
-            $epfEmployer = $grossSalary * 0.02;
-            $socsoEmployer = $grossSalary * 0.0175;
-            $totalEmployerContribution = $epfEmployer + $socsoEmployer;
-
-            $totalPayment = $netSalary + $totalEmployerContribution;
+            // Calculate total payment to CLAB (Basic + Employer contributions)
+            $totalPayment = $calculator->calculateTotalPaymentToCLAB($basicSalary);
 
             $workerEstimates[] = [
                 'worker_id' => $worker->wkr_id,
@@ -199,12 +196,14 @@ class PayrollService
     public function getCurrentPayrollPeriod(): array
     {
         $now = now();
+        $deadline = Carbon::create($now->year, $now->month, 1)->endOfMonth();
+
         return [
             'month' => $now->month,
             'year' => $now->year,
             'month_name' => $now->format('F'),
-            'deadline' => Carbon::create($now->year, $now->month, 1)->endOfMonth(),
-            'days_until_deadline' => now()->diffInDays(Carbon::create($now->year, $now->month, 1)->endOfMonth(), false),
+            'deadline' => $deadline,
+            'days_until_deadline' => (int) now()->diffInDays($deadline, false),
         ];
     }
 }

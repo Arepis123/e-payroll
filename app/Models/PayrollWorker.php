@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PaymentCalculatorService;
 use Illuminate\Database\Eloquent\Model;
 
 class PayrollWorker extends Model
@@ -63,47 +64,59 @@ class PayrollWorker extends Model
     }
 
     /**
-     * Calculate all salary components based on hours and basic salary
-     * Based on formula: Daily Rate = Basic Salary / 26, Hourly Rate = Daily Rate / 8
+     * Calculate all salary components using PaymentCalculatorService
      *
-     * IMPORTANT: OT is paid in the following month
-     * - Current month OT is calculated and stored but NOT paid this month
-     * - Previous month OT is included in this month's payment
+     * IMPORTANT: OT Payment Deferral
+     * - Current month OT is CALCULATED and STORED but NOT PAID this month
+     * - Previous month OT is INCLUDED in this month's payment
+     *
+     * This system collects: Basic Salary + Employer Contributions (EPF + SOCSO) + Previous Month OT
+     * Worker receives: Basic Salary - Worker Deductions (EPF + SOCSO) + Previous Month OT
+     *
+     * Formula (from FORMULA PENGIRAAN GAJI DAN OVERTIME.csv):
+     * - Basic Salary: RM 1,700 minimum
+     * - EPF Worker: 2% | EPF Employer: 2%
+     * - SOCSO Worker: 0.5% | SOCSO Employer: 1.75%
+     * - Daily Rate: Basic / 26 days
+     * - Hourly Rate: Daily / 8 hours
+     * - Weekday OT: Hourly × 1.5
+     * - Rest Day OT: Hourly × 2.0
+     * - Public Holiday OT: Hourly × 3.0
      *
      * @param float $previousMonthOtPay Previous month's OT amount to be paid this month
      */
     public function calculateSalary(float $previousMonthOtPay = 0): void
     {
-        // Calculate hourly rate for current month OT (to be paid next month)
-        $dailyRate = $this->basic_salary / 26;
-        $hourlyRate = $dailyRate / 8;
+        $calculator = app(PaymentCalculatorService::class);
 
-        // Regular pay (basic salary for current month)
-        $this->regular_pay = $this->basic_salary;
-
-        // Current month OT calculations (stored but NOT paid this month)
-        $this->ot_normal_pay = $this->ot_normal_hours * ($hourlyRate * 1.5); // Normal day OT: 1.5x
-        $this->ot_rest_pay = $this->ot_rest_hours * ($hourlyRate * 2); // Rest day OT: 2x
-        $this->ot_public_pay = $this->ot_public_hours * ($hourlyRate * 3); // Public holiday OT: 3x
+        // Calculate CURRENT month overtime (to be paid NEXT month)
+        $this->ot_normal_pay = round($calculator->calculateWeekdayOTRate($this->basic_salary) * $this->ot_normal_hours, 2);
+        $this->ot_rest_pay = round($calculator->calculateRestDayOTRate($this->basic_salary) * $this->ot_rest_hours, 2);
+        $this->ot_public_pay = round($calculator->calculatePublicHolidayOTRate($this->basic_salary) * $this->ot_public_hours, 2);
         $this->total_ot_pay = $this->ot_normal_pay + $this->ot_rest_pay + $this->ot_public_pay;
 
-        // Gross salary = Basic salary + Previous month's OT
-        // NOTE: Current month OT is NOT included in payment calculation
+        // Regular pay is the basic salary
+        $this->regular_pay = $this->basic_salary;
+
+        // Gross salary = Basic + PREVIOUS month's OT (NOT current month)
         $this->gross_salary = $this->basic_salary + $previousMonthOtPay;
 
         // Employee deductions (calculated on gross salary including previous month OT)
-        $this->epf_employee = $this->gross_salary * 0.02; // 2% EPF
-        $this->socso_employee = $this->gross_salary * 0.005; // 0.5% SOCSO
+        $this->epf_employee = $calculator->calculateWorkerEPF($this->gross_salary);
+        $this->socso_employee = $calculator->calculateWorkerSOCSO($this->gross_salary);
         $this->total_deductions = $this->epf_employee + $this->socso_employee;
 
         // Employer contributions (calculated on gross salary including previous month OT)
-        $this->epf_employer = $this->gross_salary * 0.02; // 2% EPF
-        $this->socso_employer = $this->gross_salary * 0.0175; // 1.75% SOCSO
+        $this->epf_employer = $calculator->calculateEmployerEPF($this->gross_salary);
+        $this->socso_employer = $calculator->calculateEmployerSOCSO($this->gross_salary);
         $this->total_employer_contribution = $this->epf_employer + $this->socso_employer;
 
         // Final amounts
+        // Net salary = What worker receives (Gross - Worker deductions)
         $this->net_salary = $this->gross_salary - $this->total_deductions;
-        $this->total_payment = $this->net_salary + $this->total_employer_contribution;
+
+        // Total payment = What system collects from contractor (Gross + Employer contributions)
+        $this->total_payment = $this->gross_salary + $this->total_employer_contribution;
     }
 
     /**
@@ -112,5 +125,20 @@ class PayrollWorker extends Model
     public function getTotalOvertimeHoursAttribute(): float
     {
         return $this->ot_normal_hours + $this->ot_rest_hours + $this->ot_public_hours;
+    }
+
+    /**
+     * Get payment breakdown using calculator service
+     */
+    public function getPaymentBreakdown(): array
+    {
+        $calculator = app(PaymentCalculatorService::class);
+
+        return $calculator->calculateWorkerPayment(
+            $this->basic_salary,
+            $this->ot_normal_hours,
+            $this->ot_rest_hours,
+            $this->ot_public_hours
+        );
     }
 }
