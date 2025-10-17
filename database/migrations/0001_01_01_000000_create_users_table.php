@@ -13,10 +13,15 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            $table->string('username')->unique(); // From u_username
+            $table->string('contractor_clab_no')->nullable()->index(); // From u_username, used to link with worker contracts
+            $table->string('name'); // From u_fname (contractor name)
+            $table->string('email')->unique(); // From u_email
+            $table->string('phone')->nullable(); // From u_contactno
+            $table->string('person_in_charge')->nullable(); // From u_lname
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable(); // Nullable because auth is from third-party DB
+            $table->string('role')->default('client'); // Role management
             $table->rememberToken();
             $table->timestamps();
         });

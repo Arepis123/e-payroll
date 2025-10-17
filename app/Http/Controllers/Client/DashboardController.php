@@ -18,18 +18,21 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         // Get contractor CLAB number from authenticated user
-        $clabNo = $request->user()->contractor_clab_no;
+        // Use username as fallback for matching with worker database
+        $clabNo = $request->user()->contractor_clab_no ?? $request->user()->username;
 
-        // If user doesn't have a CLAB number, show error
+        // If user doesn't have a CLAB number or username, show error
         if (!$clabNo) {
             return view('client.dashboard', [
-                'error' => 'No contractor CLAB number assigned to your account. Please contact administrator.',
+                'error' => 'No contractor identifier assigned to your account. Please contact administrator.',
                 'workers' => collect([]),
+                'recentWorkers' => collect([]),
                 'stats' => [
                     'total_workers' => 0,
                     'active_workers' => 0,
                     'expiring_soon' => 0,
                 ],
+                'expiringContracts' => collect([]),
             ]);
         }
 

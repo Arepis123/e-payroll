@@ -18,18 +18,30 @@ class WorkersController extends Controller
     public function index(Request $request)
     {
         // Get contractor CLAB number from authenticated user
-        $clabNo = $request->user()->contractor_clab_no;
+        // Use username as fallback for matching with worker database
+        $clabNo = $request->user()->contractor_clab_no ?? $request->user()->username;
 
         // If user doesn't have a CLAB number, show error
         if (!$clabNo) {
             return view('client.workers', [
-                'error' => 'No contractor CLAB number assigned to your account. Please contact administrator.',
+                'error' => 'No contractor identifier assigned to your account. Please contact administrator.',
                 'workers' => collect([]),
                 'stats' => [
                     'total_workers' => 0,
                     'active_workers' => 0,
+                    'inactive_workers' => 0,
                     'average_salary' => 0,
                 ],
+                'pagination' => [
+                    'current_page' => 1,
+                    'per_page' => 10,
+                    'total' => 0,
+                    'last_page' => 1,
+                    'from' => 0,
+                    'to' => 0,
+                ],
+                'search' => null,
+                'statusFilter' => null,
             ]);
         }
 
@@ -101,10 +113,11 @@ class WorkersController extends Controller
     public function show(Request $request, $workerId)
     {
         // Get contractor CLAB number from authenticated user
-        $clabNo = $request->user()->contractor_clab_no;
+        // Use username as fallback for matching with worker database
+        $clabNo = $request->user()->contractor_clab_no ?? $request->user()->username;
 
         if (!$clabNo) {
-            abort(403, 'No contractor CLAB number assigned.');
+            abort(403, 'No contractor identifier assigned.');
         }
 
         // Get all contracted workers and find the specific one
