@@ -122,7 +122,7 @@
                                 </td>
                                 <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $worker->ic_number }}</td>
                                 <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $worker->country->cty_desc ?? '-' }}</td>
-                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $worker->position ?? '-' }}</td>
+                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $worker->workTrade->trade_desc ?? '-' }}</td>
                                 <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
                                     @if($worker->basic_salary)
                                         RM {{ number_format($worker->basic_salary, 2) }}

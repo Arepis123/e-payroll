@@ -166,23 +166,37 @@ class PaymentController extends Controller
     {
         $submission = PayrollSubmission::with('payment')->findOrFail($submissionId);
 
-        // Check payment status
+        // Payment still pending, check with Billplz first
+        if ($submission->payment && $submission->payment->billplz_bill_id && $submission->payment->status === 'pending') {
+            $bill = $this->billplzService->getBill($submission->payment->billplz_bill_id);
+
+            if ($bill && $bill['paid']) {
+                // Update payment status
+                $submission->payment->markAsCompleted($bill);
+                $submission->refresh();
+            }
+        }
+
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            // User session expired, show guest views without requiring login
+            if ($submission->payment && $submission->payment->status === 'completed') {
+                return view('client.payment-success-guest', compact('submission'));
+            } elseif ($submission->payment && $submission->payment->status === 'failed') {
+                return redirect()->route('login')
+                    ->with('error', 'Payment failed. Please login to try again.');
+            } else {
+                return redirect()->route('login')
+                    ->with('info', 'Payment is being processed. Please login to check status.');
+            }
+        }
+
+        // User is authenticated, show the appropriate view
         if ($submission->payment && $submission->payment->status === 'completed') {
             return view('client.payment-success', compact('submission'));
         } elseif ($submission->payment && $submission->payment->status === 'failed') {
             return view('client.payment-failed', compact('submission'));
         } else {
-            // Payment still pending, check with Billplz
-            if ($submission->payment && $submission->payment->billplz_bill_id) {
-                $bill = $this->billplzService->getBill($submission->payment->billplz_bill_id);
-
-                if ($bill && $bill['paid']) {
-                    // Update payment status
-                    $submission->payment->markAsCompleted($bill);
-                    return view('client.payment-success', compact('submission'));
-                }
-            }
-
             return view('client.payment-pending', compact('submission'));
         }
     }

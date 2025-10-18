@@ -10,28 +10,23 @@ use Illuminate\Support\Collection;
 class PayrollService
 {
     /**
-     * Get or create current month's payroll submission for a contractor
+     * Get current month's latest draft payroll submission for a contractor
+     * Returns the latest draft submission or null (does NOT create)
+     * Note: This method is deprecated - use direct queries instead
      */
-    public function getCurrentMonthSubmission(string $clabNo): PayrollSubmission
+    public function getCurrentMonthSubmission(string $clabNo): ?PayrollSubmission
     {
         $now = now();
         $month = $now->month;
         $year = $now->year;
 
-        // Get last day of current month as deadline
-        $deadline = Carbon::create($year, $month, 1)->endOfMonth();
-
-        return PayrollSubmission::firstOrCreate(
-            [
-                'contractor_clab_no' => $clabNo,
-                'month' => $month,
-                'year' => $year,
-            ],
-            [
-                'payment_deadline' => $deadline,
-                'status' => 'draft',
-            ]
-        );
+        // Find the latest draft submission for this month
+        return PayrollSubmission::where('contractor_clab_no', $clabNo)
+            ->where('month', $month)
+            ->where('year', $year)
+            ->where('status', 'draft')
+            ->latest('created_at')
+            ->first();
     }
 
     /**
@@ -45,24 +40,29 @@ class PayrollService
     }
 
     /**
-     * Create or update payroll submission with workers data
-     *
-     * Payment Calculation (based on FORMULA PENGIRAAN GAJI DAN OVERTIME.csv):
-     * - System collects: Basic Salary + Employer Contributions (EPF + SOCSO) + PREVIOUS Month OT
-     * - Worker receives: Basic Salary - Worker Deductions (EPF + SOCSO) + PREVIOUS Month OT
-     *
-     * IMPORTANT: OT Payment Deferral
-     * - Current month OT is CALCULATED and STORED but NOT PAID this month
-     * - Previous month OT is INCLUDED in this month's payment
-     * - This ensures OT is verified before payment
+     * Save payroll as DRAFT (not submitted for payment yet)
+     * Draft submissions can be edited later before final submission
      */
-    public function savePayrollSubmission(string $clabNo, array $workersData): PayrollSubmission
+    public function savePayrollDraft(string $clabNo, array $workersData): PayrollSubmission
     {
-        $submission = $this->getCurrentMonthSubmission($clabNo);
+        // Create a NEW draft submission
+        $now = now();
+        $month = $now->month;
+        $year = $now->year;
+        $deadline = Carbon::create($year, $month, 1)->endOfMonth();
+
+        $submission = PayrollSubmission::create([
+            'contractor_clab_no' => $clabNo,
+            'month' => $month,
+            'year' => $year,
+            'payment_deadline' => $deadline,
+            'status' => 'draft',
+            'submitted_at' => null,  // Not submitted yet
+        ]);
 
         // Get previous month's submission to retrieve OT amounts
-        $previousMonth = $submission->month - 1;
-        $previousYear = $submission->year;
+        $previousMonth = $month - 1;
+        $previousYear = $year;
 
         // Handle year rollover (January gets December from previous year)
         if ($previousMonth < 1) {
@@ -79,9 +79,6 @@ class PayrollService
                 $previousMonthOtMap[$prevWorker->worker_id] = $prevWorker->total_ot_pay;
             }
         }
-
-        // Delete existing workers for this submission
-        $submission->workers()->delete();
 
         $totalAmount = 0;
 
@@ -106,8 +103,83 @@ class PayrollService
             'total_workers' => count($workersData),
             'total_amount' => $totalAmount,
             'total_with_penalty' => $totalAmount,
+        ]);
+
+        return $submission->fresh(['workers']);
+    }
+
+    /**
+     * Create or update payroll submission with workers data
+     *
+     * Payment Calculation (based on FORMULA PENGIRAAN GAJI DAN OVERTIME.csv):
+     * - System collects: Basic Salary + Employer Contributions (EPF + SOCSO) + PREVIOUS Month OT
+     * - Worker receives: Basic Salary - Worker Deductions (EPF + SOCSO) + PREVIOUS Month OT
+     *
+     * IMPORTANT: OT Payment Deferral
+     * - Current month OT is CALCULATED and STORED but NOT PAID this month
+     * - Previous month OT is INCLUDED in this month's payment
+     * - This ensures OT is verified before payment
+     */
+    public function savePayrollSubmission(string $clabNo, array $workersData): PayrollSubmission
+    {
+        // Create a NEW submission for this batch of workers
+        $now = now();
+        $month = $now->month;
+        $year = $now->year;
+        $deadline = Carbon::create($year, $month, 1)->endOfMonth();
+
+        $submission = PayrollSubmission::create([
+            'contractor_clab_no' => $clabNo,
+            'month' => $month,
+            'year' => $year,
+            'payment_deadline' => $deadline,
             'status' => 'pending_payment',
             'submitted_at' => now(),
+        ]);
+
+        // Get previous month's submission to retrieve OT amounts
+        $previousMonth = $month - 1;
+        $previousYear = $year;
+
+        // Handle year rollover (January gets December from previous year)
+        if ($previousMonth < 1) {
+            $previousMonth = 12;
+            $previousYear--;
+        }
+
+        $previousSubmission = $this->getSubmissionForMonth($clabNo, $previousMonth, $previousYear);
+
+        // Create a map of worker_id => previous month OT amount
+        $previousMonthOtMap = [];
+        if ($previousSubmission) {
+            foreach ($previousSubmission->workers as $prevWorker) {
+                $previousMonthOtMap[$prevWorker->worker_id] = $prevWorker->total_ot_pay;
+            }
+        }
+
+        $totalAmount = 0;
+
+        // Create payroll workers and calculate totals
+        foreach ($workersData as $workerData) {
+            $payrollWorker = new PayrollWorker($workerData);
+            $payrollWorker->payroll_submission_id = $submission->id;
+
+            // Get previous month's OT for this worker (default to 0)
+            $previousMonthOt = $previousMonthOtMap[$workerData['worker_id']] ?? 0;
+
+            // Calculate salary with previous month's OT included in payment
+            $payrollWorker->calculateSalary($previousMonthOt);
+            $payrollWorker->save();
+
+            // Total amount is what the system collects (Gross + Employer contributions)
+            $totalAmount += $payrollWorker->total_payment;
+        }
+
+        // Update submission totals
+        $submission->update([
+            'total_workers' => count($workersData),
+            'total_amount' => $totalAmount,
+            'total_with_penalty' => $totalAmount,
         ]);
 
         return $submission->fresh(['workers']);

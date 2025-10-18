@@ -1,9 +1,9 @@
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
+    <x-settings.layout :heading="__('Update password')" :subheading="__('Password updates must be performed on the e-CLAB Portal')">
         <form wire:submit="updatePassword" class="mt-6 space-y-6">
-            <flux:input
+            <!-- <flux:input
                 wire:model="current_password"
                 :label="__('Current password')"
                 type="password"
@@ -33,7 +33,7 @@
                 <x-action-message class="me-3" on="password-updated">
                     {{ __('Saved.') }}
                 </x-action-message>
-            </div>
+            </div> -->
         </form>
     </x-settings.layout>
 </section>

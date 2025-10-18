@@ -6,10 +6,21 @@
                 <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Payroll Details</h1>
                 <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ $submission->month_year }}</p>
             </div>
-            <flux:button variant="outline" href="{{ route('client.timesheet') }}">
-                <flux:icon.arrow-left class="size-4" />
-                Back to Timesheet
-            </flux:button>
+            <div class="flex gap-2">
+                @if($submission->status === 'draft')
+                    <form method="POST" action="{{ route('client.timesheet.submit', $submission->id) }}" class="inline">
+                        @csrf
+                        <flux:button type="submit" variant="primary">
+                            <flux:icon.check class="size-4 inline"/>
+                            Submit for Payment
+                        </flux:button>
+                    </form>
+                @endif
+                <flux:button variant="outline" href="{{ route('client.timesheet') }}">
+                    <flux:icon.arrow-left class="size-4 inline" />
+                    Back to Timesheet
+                </flux:button>
+            </div>
         </div>
 
         <!-- Submission Info Card -->
@@ -69,7 +80,7 @@
                     <form method="POST" action="{{ route('client.payment.create', $submission->id) }}">
                         @csrf
                         <flux:button type="submit" variant="primary" >
-                            <flux:icon.credit-card class="size-5" />
+                            <flux:icon.credit-card class="size-5 inline me-1" />
                             Pay Now - RM {{ number_format($submission->has_penalty ? $submission->total_with_penalty : $submission->total_amount, 2) }}
                         </flux:button>
                     </form>

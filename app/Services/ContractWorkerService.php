@@ -60,7 +60,8 @@ class ContractWorkerService
 
     /**
      * Get contracted workers for a specific contractor
-     * Returns only workers that have active contracts
+     * Returns all workers that have contracts (active or expired)
+     * Sorted by: Active Status (active first), then Country (ascending), then Name
      */
     public function getContractedWorkers(string $clabNo): Collection
     {
@@ -69,11 +70,51 @@ class ContractWorkerService
             $this->cacheTTL,
             function() use ($clabNo) {
                 $contractWorkerIds = ContractWorker::byContractor($clabNo)
+                    ->pluck('con_wkr_id');
+
+                return Worker::whereIn('wkr_id', $contractWorkerIds)
+                    ->with(['country', 'workTrade'])
+                    ->get()
+                    ->map(function($worker) use ($clabNo) {
+                        // Attach contract info to each worker (most recent contract)
+                        $contract = ContractWorker::where('con_wkr_id', $worker->wkr_id)
+                            ->where('con_ctr_clab_no', $clabNo)
+                            ->orderBy('con_end', 'desc')
+                            ->first();
+
+                        $worker->contract_info = $contract;
+                        return $worker;
+                    })
+                    ->sortBy([
+                        // Sort by active status first (active = 0, inactive = 1, so active comes first)
+                        fn($worker) => $worker->contract_info && $worker->contract_info->isActive() ? 0 : 1,
+                        // Then by country name (ascending)
+                        fn($worker) => $worker->country?->cty_desc ?? 'ZZZ',
+                        // Then by worker name
+                        fn($worker) => $worker->wkr_name,
+                    ])
+                    ->values(); // Reset array keys after sorting
+            }
+        );
+    }
+
+    /**
+     * Get only active contracted workers for a specific contractor
+     * Returns workers with active contracts only
+     * Sorted by: Country (ascending), then Name
+     */
+    public function getActiveContractedWorkers(string $clabNo): Collection
+    {
+        return Cache::remember(
+            "contracted_workers:contractor:{$clabNo}:active_only",
+            $this->cacheTTL,
+            function() use ($clabNo) {
+                $contractWorkerIds = ContractWorker::byContractor($clabNo)
                     ->active()
                     ->pluck('con_wkr_id');
 
                 return Worker::whereIn('wkr_id', $contractWorkerIds)
-                    ->with('country')
+                    ->with(['country', 'workTrade'])
                     ->get()
                     ->map(function($worker) use ($clabNo) {
                         // Attach contract info to each worker
@@ -84,7 +125,14 @@ class ContractWorkerService
 
                         $worker->contract_info = $contract;
                         return $worker;
-                    });
+                    })
+                    ->sortBy([
+                        // Sort by country name (ascending)
+                        fn($worker) => $worker->country?->cty_desc ?? 'ZZZ',
+                        // Then by worker name
+                        fn($worker) => $worker->wkr_name,
+                    ])
+                    ->values(); // Reset array keys after sorting
             }
         );
     }

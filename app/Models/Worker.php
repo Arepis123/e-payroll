@@ -108,6 +108,14 @@ class Worker extends Model
     }
 
     /**
+     * Get the work trade/position of this worker
+     */
+    public function workTrade()
+    {
+        return $this->belongsTo(WorkTrade::class, 'wkr_wtrade', 'trade_id');
+    }
+
+    /**
      * Get contract worker records for this worker
      */
     public function contracts()
@@ -154,7 +162,7 @@ class Worker extends Model
      */
     public function getPositionAttribute()
     {
-        return $this->wkr_wtrade;
+        return $this->workTrade?->trade_desc ?? $this->wkr_wtrade;
     }
 
     /**

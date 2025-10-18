@@ -96,6 +96,7 @@
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Gross Salary</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Deductions</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Net Salary</th>
+                            <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Employer Contribution</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Cost</th>
                         </tr>
                     </thead>
@@ -120,6 +121,10 @@
                             <td class="py-3 text-right text-sm font-medium text-green-600 dark:text-green-400">
                                 RM {{ number_format($worker->net_salary, 2) }}
                             </td>
+                            <td class="py-3 text-right text-sm text-blue-600 dark:text-blue-400">
+                                +RM {{ number_format($worker->total_employer_contribution, 2) }}<br>
+                                <span class="text-xs">(EPF+SOCSO)</span>
+                            </td>
                             <td class="py-3 text-right text-sm font-bold text-zinc-900 dark:text-zinc-100">
                                 RM {{ number_format($worker->total_payment, 2) }}
                             </td>
@@ -128,7 +133,7 @@
                     </tbody>
                     <tfoot class="border-t-2 border-zinc-300 dark:border-zinc-600">
                         <tr>
-                            <td colspan="5" class="py-4 text-right text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                            <td colspan="6" class="py-4 text-right text-sm font-bold text-zinc-900 dark:text-zinc-100">
                                 Subtotal:
                             </td>
                             <td class="py-4 text-right text-lg font-bold text-zinc-900 dark:text-zinc-100">
@@ -137,7 +142,7 @@
                         </tr>
                         @if($invoice->has_penalty)
                         <tr>
-                            <td colspan="5" class="py-2 text-right text-sm font-semibold text-red-600 dark:text-red-400">
+                            <td colspan="6" class="py-2 text-right text-sm font-semibold text-red-600 dark:text-red-400">
                                 Late Payment Penalty (8%):
                             </td>
                             <td class="py-2 text-right text-sm font-semibold text-red-600 dark:text-red-400">
@@ -145,7 +150,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="5" class="py-2 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
+                            <td colspan="6" class="py-2 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
                                 Total Amount Due:
                             </td>
                             <td class="py-2 text-right text-xl font-bold text-red-600 dark:text-red-400">
@@ -154,7 +159,7 @@
                         </tr>
                         @else
                         <tr>
-                            <td colspan="5" class="py-2 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
+                            <td colspan="6" class="py-2 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
                                 Total Amount Due:
                             </td>
                             <td class="py-2 text-right text-xl font-bold text-zinc-900 dark:text-zinc-100">

@@ -25,10 +25,11 @@ Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('
     Route::get('timesheet', [\App\Http\Controllers\Client\TimesheetController::class, 'index'])->name('timesheet');
     Route::post('timesheet', [\App\Http\Controllers\Client\TimesheetController::class, 'store'])->name('timesheet.store');
     Route::get('timesheet/{id}', [\App\Http\Controllers\Client\TimesheetController::class, 'show'])->name('timesheet.show');
+    Route::get('timesheet/{id}/edit', [\App\Http\Controllers\Client\TimesheetController::class, 'edit'])->name('timesheet.edit');
+    Route::post('timesheet/{id}/submit', [\App\Http\Controllers\Client\TimesheetController::class, 'submitDraft'])->name('timesheet.submit');
 
     // Payment routes
     Route::post('payment/{submission}', [\App\Http\Controllers\Client\PaymentController::class, 'createPayment'])->name('payment.create');
-    Route::get('payment/{submission}/return', [\App\Http\Controllers\Client\PaymentController::class, 'return'])->name('payment.return');
 
     Route::get('payments', [\App\Http\Controllers\Client\PaymentHistoryController::class, 'index'])->name('payments');
     Route::get('invoices', [\App\Http\Controllers\Client\InvoiceController::class, 'index'])->name('invoices');
@@ -36,8 +37,9 @@ Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('
     Route::get('invoices/{id}/download', [\App\Http\Controllers\Client\InvoiceController::class, 'download'])->name('invoices.download');
 });
 
-// Billplz Webhook (No auth/middleware required for webhooks)
+// Billplz routes (No auth/middleware required - users may have lost session when redirected back from payment gateway)
 Route::post('/billplz/callback', [\App\Http\Controllers\Client\PaymentController::class, 'callback'])->name('billplz.callback');
+Route::get('/client/payment/{submission}/return', [\App\Http\Controllers\Client\PaymentController::class, 'return'])->name('client.payment.return');
 
 // Legacy routes (for backward compatibility - redirect based on role)
 Route::get('dashboard', function () {

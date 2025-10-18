@@ -109,30 +109,36 @@
                             </td>
                             <td class="py-3">
                                 <div class="flex gap-2">
-                                    <flux:button
-                                        variant="ghost"
-                                        size="sm"
-                                        icon="eye"
-                                        title="View Invoice"
-                                        href="{{ route('client.invoices.show', $invoice->id) }}"
-                                    />
-                                    <flux:button
-                                        variant="ghost"
-                                        size="sm"
-                                        icon="arrow-down-tray"
-                                        title="Download PDF"
-                                        href="{{ route('client.invoices.download', $invoice->id) }}"
-                                    />
+                                    <flux:tooltip content="View Invoice">
+                                        <flux:button
+                                            variant="ghost"
+                                            size="xs"
+                                            icon="eye"
+                                            title="View Invoice"
+                                            href="{{ route('client.invoices.show', $invoice->id) }}"
+                                        />
+                                    </flux:tooltip>
+                                    <flux:tooltip content="Download PDF">
+                                        <flux:button
+                                            variant="ghost"
+                                            size="xs"
+                                            icon="arrow-down-tray"
+                                            title="Download PDF"
+                                            href="{{ route('client.invoices.download', $invoice->id) }}"                                        
+                                        />
+                                    </flux:tooltip>
                                     @if($invoice->status === 'pending_payment' || $invoice->status === 'overdue')
                                         <form method="POST" action="{{ route('client.payment.create', $invoice->id) }}" class="inline">
                                             @csrf
-                                            <flux:button
-                                                type="submit"
-                                                variant="ghost"
-                                                size="sm"
-                                                icon="credit-card"
-                                                title="Pay Now"
-                                            />
+                                            <flux:tooltip content="Pay Now">
+                                                <flux:button
+                                                    type="submit"
+                                                    variant="ghost"
+                                                    size="xs"
+                                                    icon="credit-card"
+                                                    title="Pay Now"
+                                                />
+                                            </flux:tooltip>
                                         </form>
                                     @endif
                                 </div>

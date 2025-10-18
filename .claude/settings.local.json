@@ -11,7 +11,8 @@
       "Bash(taskkill:*)",
       "Bash(python:*)",
       "WebFetch(domain:www.billplz.com)",
-      "Bash(del \"C:\\xampp\\htdocs\\e-payroll\\database\\migrations\\2025_10_14_065952_add_role_to_users_table.php\")"
+      "Bash(del \"C:\\xampp\\htdocs\\e-payroll\\database\\migrations\\2025_10_14_065952_add_role_to_users_table.php\")",
+      "WebFetch(domain:fluxui.dev)"
     ],
     "deny": [],
     "ask": []

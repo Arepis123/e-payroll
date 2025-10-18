@@ -3,9 +3,12 @@
         <!-- Page Header -->
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Timesheet Management</h1>
-                <p class="text-sm text-zinc-600 dark:text-zinc-400">Submit monthly payroll with overtime hours</p>
+                <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Edit Draft Submission</h1>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">Editing draft for {{ $submission->month_year }}</p>
             </div>
+            <flux:button variant="filled" icon="arrow-left" href="{{ route('client.timesheet') }}">
+                Back to Timesheet
+            </flux:button>
         </div>
 
         @if(session('success'))
@@ -126,126 +129,121 @@
                 </div>
             </div>
 
-            @if(count($workersData) > 0)
-                <form method="POST" action="{{ route('client.timesheet.store') }}" id="timesheetForm">
-                    @csrf
+            <form method="POST" action="{{ route('client.timesheet.store') }}" id="timesheetForm">
+                @csrf
+                <input type="hidden" name="draft_id" value="{{ $submission->id }}">
 
-                    <!-- Selection Controls -->
-                    <div class="mb-4 flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <span class="text-sm text-zinc-600 dark:text-zinc-400">
-                                <span id="selectedCount">{{ count($workersData) }}</span> of {{ count($workersData) }} workers selected
-                            </span>
-                        </div>
+                <!-- Selection Controls -->
+                <div class="mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm text-zinc-600 dark:text-zinc-400">
+                            <span id="selectedCount">{{ count($workersData) }}</span> of {{ count($workersData) }} workers selected
+                        </span>
                     </div>
+                </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                                    <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400 w-12">Select</th>
-                                    <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Worker Name</th>
-                                    <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Employee ID</th>
-                                    <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Basic Salary</th>
-                                    <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Normal (hrs)</th>
-                                    <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Rest Day (hrs)</th>
-                                    <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Public (hrs)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                                @foreach($workersData as $index => $worker)
-                                <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 worker-row" data-worker-index="{{ $index }}">
-                                    <td class="py-3">
-                                        <input
-                                            type="checkbox"
-                                            name="workers[{{ $index }}][included]"
-                                            value="1"
-                                            class="worker-checkbox size-4 rounded border-zinc-300 dark:border-zinc-700"
-                                            checked
-                                        />
-                                    </td>
-                                    <td class="py-3">
-                                        <div class="flex items-center gap-3">
-                                            <flux:avatar size="sm" name="{{ $worker->worker_name }}" />
-                                            <div>
-                                                <div class="text-sm text-zinc-900 dark:text-zinc-100">{{ $worker->worker_name }}</div>
-                                                <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $worker->worker_passport }}</div>
-                                            </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-zinc-200 dark:border-zinc-700">
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400 w-12">Select</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Worker Name</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Employee ID</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Basic Salary</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Normal (hrs)</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Rest Day (hrs)</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Public (hrs)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                            @foreach($workersData as $index => $worker)
+                            <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 worker-row" data-worker-index="{{ $index }}">
+                                <td class="py-3">
+                                    <input
+                                        type="checkbox"
+                                        name="workers[{{ $index }}][included]"
+                                        value="1"
+                                        class="worker-checkbox size-4 rounded border-zinc-300 dark:border-zinc-700"
+                                        {{ $worker->included ? 'checked' : '' }}
+                                    />
+                                </td>
+                                <td class="py-3">
+                                    <div class="flex items-center gap-3">
+                                        <flux:avatar size="sm" name="{{ $worker->worker_name }}" />
+                                        <div>
+                                            <div class="text-sm text-zinc-900 dark:text-zinc-100">{{ $worker->worker_name }}</div>
+                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $worker->worker_passport }}</div>
                                         </div>
-                                        <input type="hidden" name="workers[{{ $index }}][worker_id]" value="{{ $worker->worker_id }}">
-                                        <input type="hidden" name="workers[{{ $index }}][worker_name]" value="{{ $worker->worker_name }}">
-                                        <input type="hidden" name="workers[{{ $index }}][worker_passport]" value="{{ $worker->worker_passport }}">
-                                    </td>
-                                    <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->worker_id }}</td>
-                                    <td class="py-3">
-                                        <flux:input
-                                            type="number"
-                                            name="workers[{{ $index }}][basic_salary]"
-                                            class="w-32"
-                                            value="{{ $worker->basic_salary }}"
-                                            min="1700"
-                                            step="0.01"
-                                            readonly
-                                        />
-                                    </td>
-                                    <td class="py-3 px-2">
-                                        <flux:input
-                                            type="number"
-                                            name="workers[{{ $index }}][ot_normal_hours]"
-                                            class="w-24"
-                                            value="{{ $worker->ot_normal_hours ?? 0 }}"
-                                            min="0"
-                                            step="0.5"
-                                        />
-                                    </td>
-                                    <td class="py-3 px-2">
-                                        <flux:input
-                                            type="number"
-                                            name="workers[{{ $index }}][ot_rest_hours]"
-                                            class="w-24"
-                                            value="{{ $worker->ot_rest_hours ?? 0 }}"
-                                            min="0"
-                                            step="0.5"
-                                        />
-                                    </td>
-                                    <td class="py-3 px-2">
-                                        <flux:input
-                                            type="number"
-                                            name="workers[{{ $index }}][ot_public_hours]"
-                                            class="w-24"
-                                            value="{{ $worker->ot_public_hours ?? 0 }}"
-                                            min="0"
-                                            step="0.5"
-                                        />
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                                    </div>
+                                    <input type="hidden" name="workers[{{ $index }}][worker_id]" value="{{ $worker->worker_id }}">
+                                    <input type="hidden" name="workers[{{ $index }}][worker_name]" value="{{ $worker->worker_name }}">
+                                    <input type="hidden" name="workers[{{ $index }}][worker_passport]" value="{{ $worker->worker_passport }}">
+                                </td>
+                                <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->worker_id }}</td>
+                                <td class="py-3">
+                                    <flux:input
+                                        type="number"
+                                        name="workers[{{ $index }}][basic_salary]"
+                                        class="w-32"
+                                        value="{{ $worker->basic_salary }}"
+                                        min="1700"
+                                        step="0.01"
+                                        readonly
+                                    />
+                                </td>
+                                <td class="py-3 px-2">
+                                    <flux:input
+                                        type="number"
+                                        name="workers[{{ $index }}][ot_normal_hours]"
+                                        class="w-24"
+                                        value="{{ $worker->ot_normal_hours ?? 0 }}"
+                                        min="0"
+                                        step="0.5"
+                                    />
+                                </td>
+                                <td class="py-3 px-2">
+                                    <flux:input
+                                        type="number"
+                                        name="workers[{{ $index }}][ot_rest_hours]"
+                                        class="w-24"
+                                        value="{{ $worker->ot_rest_hours ?? 0 }}"
+                                        min="0"
+                                        step="0.5"
+                                    />
+                                </td>
+                                <td class="py-3 px-2">
+                                    <flux:input
+                                        type="number"
+                                        name="workers[{{ $index }}][ot_public_hours]"
+                                        class="w-24"
+                                        value="{{ $worker->ot_public_hours ?? 0 }}"
+                                        min="0"
+                                        step="0.5"
+                                    />
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
 
-                    <!-- Action Buttons -->
-                    <div class="mt-6 flex justify-end items-center gap-2">
+                <!-- Action Buttons -->
+                <div class="mt-6 flex justify-between items-center">
+                    <flux:button variant="filled" icon="arrow-left" href="{{ route('client.timesheet') }}">
+                        Cancel
+                    </flux:button>
+                    <div class="flex gap-2">
                         <flux:button type="submit" variant="filled" name="action" value="draft">
-                            <!-- <flux:icon.document class="size-4 inline" /> -->
-                            Save as Draft
+                            <!-- <flux:icon.document class="size-4" /> -->
+                            Update Draft
                         </flux:button>
                         <flux:button type="submit" variant="primary" name="action" value="submit">
-                            <!-- <flux:icon.check class="size-4 inline" /> -->
+                            <!-- <flux:icon.check class="size-4" /> -->
                             Submit for Payment
                         </flux:button>
                     </div>
-                </form>
-            @else
-                <!-- No Workers Available Message -->
-                <div class="py-12 text-center">
-                    <flux:icon.users class="mx-auto size-7 text-zinc-400 dark:text-zinc-600 mb-4" />
-                    <p class="text-md font-medium text-zinc-900 dark:text-zinc-100 mb-2">No Workers Available</p>
-                    <p class="text-sm text-zinc-600 dark:text-zinc-400">
-                        All workers have already been submitted for this month's payroll.
-                    </p>
                 </div>
-            @endif
+            </form>
         </flux:card>
 
         <!-- Submission History -->
