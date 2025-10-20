@@ -69,7 +69,7 @@
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Pending</p>
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Pending Payment</p>
                         <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ $stats['pending_submissions'] }}</p>
                     </div>
                     <flux:icon.clock class="size-8 text-orange-600 dark:text-orange-400" />
@@ -79,8 +79,8 @@
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Workers</p>
-                        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $workers->count() }}</p>
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Unsubmitted Workers</p>
+                        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $stats['unsubmitted_workers'] }}</p>
                     </div>
                     <flux:icon.users class="size-8 text-purple-600 dark:text-purple-400" />
                 </div>
@@ -250,82 +250,94 @@
 
         <!-- Submission History -->
         <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-            <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Recent Submissions</h2>
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Recent Submissions</h2>
+                <div class="flex gap-2">
+                    <flux:button variant="filled" size="sm">
+                        <flux:icon.arrow-down-tray class="size-4" />
+                        Export
+                    </flux:button>
+                </div>
+            </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Period</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Submitted Date</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Workers</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Amount</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Penalty</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                        @forelse($recentSubmissions as $submission)
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $submission->month_year }}</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column align="center"><span class="text-center text-xs font-medium text-zinc-600 dark:text-zinc-400">No</span></flux:table.column>
+                    <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Period</span></flux:table.column>
+                    <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Submitted Date</span></flux:table.column>
+                    <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Workers</span></flux:table.column>
+                    <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Amount</span></flux:table.column>
+                    <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Penalty</span></flux:table.column>
+                    <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</span></flux:table.column>
+                    <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Actions</span></flux:table.column>
+                </flux:table.columns>
+
+                <flux:table.rows>
+                    @forelse($recentSubmissions as $submission)
+                        <flux:table.rows :key="$submission->id">
+                            <flux:table.cell>{{ $loop->iteration }}</flux:table.cell>
+
+                            <flux:table.cell variant="strong">{{ $submission->month_year }}</flux:table.cell>
+
+                            <flux:table.cell variant="strong">
                                 {{ $submission->submitted_at ? $submission->submitted_at->format('M d, Y') : 'Not submitted' }}
-                            </td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $submission->total_workers }}</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                            </flux:table.cell>
+
+                            <flux:table.cell variant="strong">{{ $submission->total_workers }}</flux:table.cell>
+
+                            <flux:table.cell variant="strong">
                                 RM {{ number_format($submission->total_amount, 2) }}
-                            </td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                            </flux:table.cell>
+
+                            <flux:table.cell variant="strong">
                                 @if($submission->has_penalty)
                                     <span class="text-red-600 dark:text-red-400">+ RM {{ number_format($submission->penalty_amount, 2) }}</span>
                                 @else
                                     -
                                 @endif
-                            </td>
-                            <td class="py-3">
+                            </flux:table.cell>
+
+                            <flux:table.cell>
                                 @if($submission->status === 'draft')
-                                    <flux:badge color="zinc" size="sm">Draft</flux:badge>
+                                    <flux:badge color="zinc" size="sm" inset="top bottom">Draft</flux:badge>
                                 @elseif($submission->status === 'pending_payment')
-                                    <flux:badge color="orange" size="sm">Pending Payment</flux:badge>
+                                    <flux:badge color="orange" size="sm" inset="top bottom">Pending Payment</flux:badge>
                                 @elseif($submission->status === 'paid')
-                                    <flux:badge color="green" size="sm">Paid</flux:badge>
+                                    <flux:badge color="green" size="sm" inset="top bottom">Paid</flux:badge>
                                 @elseif($submission->status === 'overdue')
-                                    <flux:badge color="red" size="sm">Overdue</flux:badge>
+                                    <flux:badge color="red" size="sm" inset="top bottom">Overdue</flux:badge>
                                 @endif
-                            </td>
-                            <td class="py-3">
-                                <div class="flex gap-2">
-                                    @if($submission->status === 'draft')
-                                        <flux:button variant="primary" size="sm" icon="pencil" href="{{ route('client.timesheet.edit', $submission->id) }}">
-                                            Edit Draft
-                                        </flux:button>
-                                    @endif
-                                    @if($submission->status === 'pending_payment' || $submission->status === 'overdue')
-                                        <form method="POST" action="{{ route('client.payment.create', $submission->id) }}" class="inline">
-                                            @csrf
-                                            <flux:button type="submit" variant="primary" size="sm">
-                                                <flux:icon.credit-card class="size-4 inline" />
-                                                Pay Now
-                                            </flux:button>
-                                        </form>
-                                    @endif
-                                    <flux:button variant="filled" size="sm" icon="eye" href="{{ route('client.timesheet.show', $submission->id) }}">
-                                        View
-                                    </flux:button>
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="7" class="py-8 text-center text-zinc-600 dark:text-zinc-400">
+                            </flux:table.cell>
+
+                            <flux:table.cell>
+                                <flux:dropdown>
+                                    <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
+                                    <flux:menu>
+                                        <flux:menu.item icon="eye" href="{{ route('client.timesheet.show', $submission->id) }}">View Details</flux:menu.item>
+                                        @if($submission->status === 'draft')
+                                            <flux:menu.separator />
+                                            <flux:menu.item icon="pencil" href="{{ route('client.timesheet.edit', $submission->id) }}">Edit Draft</flux:menu.item>
+                                        @endif
+                                        @if($submission->status === 'pending_payment' || $submission->status === 'overdue')
+                                            <flux:menu.separator />
+                                            <form method="POST" action="{{ route('client.payment.create', $submission->id) }}" class="contents">
+                                                @csrf
+                                                <flux:menu.item icon="credit-card" type="submit">Pay Now</flux:menu.item>
+                                            </form>
+                                        @endif
+                                    </flux:menu>
+                                </flux:dropdown>
+                            </flux:table.cell>
+                        </flux:table.rows>
+                    @empty
+                        <flux:table.rows>
+                            <flux:table.cell variant="strong" colspan="8" class="text-center">
                                 No submissions yet.
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                            </flux:table.cell>
+                        </flux:table.rows>
+                    @endforelse
+                </flux:table.rows>
+            </flux:table>
         </flux:card>
         @endif
     </div>

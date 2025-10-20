@@ -33,6 +33,14 @@ class PayrollSubmission extends Model
     ];
 
     /**
+     * Get the user (contractor/client) for this submission
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'contractor_clab_no', 'contractor_clab_no');
+    }
+
+    /**
      * Get the workers in this payroll submission
      */
     public function workers()

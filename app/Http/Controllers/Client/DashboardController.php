@@ -37,8 +37,9 @@ class DashboardController extends Controller
                 'paymentStats' => [
                     'this_month_amount' => 0,
                     'this_month_deadline' => null,
-                    'pending_approvals' => 0,
+                    'outstanding_balance' => 0,
                     'year_to_date_paid' => 0,
+                    'unsubmitted_workers' => 0,
                 ],
                 'recentPayments' => collect([]),
             ]);
@@ -77,10 +78,43 @@ class DashboardController extends Controller
             ->forMonth($currentMonth, $currentYear)
             ->first();
 
-        // Get pending approvals (draft or pending_payment status)
-        $pendingApprovals = PayrollSubmission::byContractor($clabNo)
-            ->whereIn('status', ['draft', 'pending_payment'])
-            ->count();
+        // Get count of workers who haven't been submitted in any timesheet this month
+        $allSubmissionsThisMonth = PayrollSubmission::where('contractor_clab_no', $clabNo)
+            ->where('month', $currentMonth)
+            ->where('year', $currentYear)
+            ->with('workers')
+            ->get();
+
+        $submittedWorkerIds = $allSubmissionsThisMonth->flatMap(function($submission) {
+            return $submission->workers->pluck('worker_id');
+        })->unique()->toArray();
+
+        $remainingWorkers = $activeContracts->filter(function($contract) use ($submittedWorkerIds) {
+            return !in_array($contract->worker->wkr_id, $submittedWorkerIds);
+        });
+
+        $unsubmittedWorkersCount = $remainingWorkers->count();
+
+        // Calculate estimated payment for unsubmitted workers
+        // Using PaymentCalculatorService to get accurate total payment to CLAB
+        $paymentCalculator = app(\App\Services\PaymentCalculatorService::class);
+        $estimatedUnsubmittedAmount = 0;
+
+        foreach ($remainingWorkers as $contract) {
+            $worker = $contract->worker;
+            // Use worker's salary if available, otherwise use minimum wage (1700)
+            $basicSalary = $worker->wkr_salary ?? 1700;
+            // Calculate total payment (basic + employer contributions, no OT assumed)
+            $estimatedUnsubmittedAmount += $paymentCalculator->calculateTotalPaymentToCLAB($basicSalary);
+        }
+
+        // Get outstanding balance (all unpaid submissions including drafts)
+        $outstandingBalanceFromSubmissions = PayrollSubmission::byContractor($clabNo)
+            ->whereIn('status', ['draft', 'pending_payment', 'overdue'])
+            ->sum('total_amount');
+
+        // Total outstanding = submitted but unpaid + estimated for unsubmitted workers
+        $outstandingBalance = $outstandingBalanceFromSubmissions + $estimatedUnsubmittedAmount;
 
         // Get year to date paid amount
         $yearToDatePaid = PayrollSubmission::byContractor($clabNo)
@@ -91,9 +125,11 @@ class DashboardController extends Controller
         $paymentStats = [
             'this_month_amount' => $thisMonthSubmission ? $thisMonthSubmission->total_with_penalty : 0,
             'this_month_deadline' => $thisMonthSubmission ? $thisMonthSubmission->payment_deadline : null,
+            'this_month_status' => $thisMonthSubmission ? $thisMonthSubmission->status : null,
             'this_month_workers' => $thisMonthSubmission ? $thisMonthSubmission->total_workers : 0,
-            'pending_approvals' => $pendingApprovals,
+            'outstanding_balance' => $outstandingBalance,
             'year_to_date_paid' => $yearToDatePaid,
+            'unsubmitted_workers' => $unsubmittedWorkersCount,
         ];
 
         // Get recent payments (last 3 months)

@@ -51,7 +51,18 @@ class ThirdPartyUserProvider implements UserProvider
             return null;
         }
 
-        // First, check if user exists in third-party database
+        // First, check if user exists locally as admin/super_admin
+        $localUser = User::where(function ($query) use ($username) {
+            $query->where('username', $username)
+                  ->orWhere('email', $username);
+        })->first();
+
+        // If local user is admin or super_admin, return immediately
+        if ($localUser && in_array($localUser->role, ['admin', 'super_admin'])) {
+            return $localUser;
+        }
+
+        // For non-admin users, check third-party database
         $thirdPartyUser = DB::connection('auth_db')
             ->table('tbl_user')
             ->where(function ($query) use ($username) {
@@ -94,7 +105,12 @@ class ThirdPartyUserProvider implements UserProvider
             return false;
         }
 
-        // Check against third-party database (MD5 hash)
+        // For admin and super_admin, validate against local bcrypt password
+        if (in_array($user->role, ['admin', 'super_admin'])) {
+            return \Illuminate\Support\Facades\Hash::check($password, $user->password);
+        }
+
+        // For client users, check against third-party database (MD5 hash)
         $thirdPartyUser = DB::connection('auth_db')
             ->table('tbl_user')
             ->where('u_username', $user->username)

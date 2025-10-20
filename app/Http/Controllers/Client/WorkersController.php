@@ -48,6 +48,10 @@ class WorkersController extends Controller
         // Get all contracted workers for this contractor
         $allWorkers = $this->contractWorkerService->getContractedWorkers($clabNo);
 
+        // Get unique countries and positions for filters (from original unfiltered data)
+        $countries = $allWorkers->pluck('country')->filter()->unique('cty_code')->sortBy('cty_desc')->values();
+        $positions = $allWorkers->pluck('workTrade')->filter()->unique('trade_code')->sortBy('trade_desc')->values();
+
         // Apply search filter
         $search = $request->input('search');
         if ($search) {
@@ -68,6 +72,23 @@ class WorkersController extends Controller
                     return !$worker->contract_info || !$worker->contract_info->isActive();
                 }
                 return true;
+            });
+        }
+
+        // Apply country filter
+        $countryFilter = $request->input('country');
+        \Log::info('Country Filter Received: ' . ($countryFilter ?? 'NULL'));
+        if ($countryFilter && $countryFilter !== 'all') {
+            $allWorkers = $allWorkers->filter(function($worker) use ($countryFilter) {
+                return $worker->country && $worker->country->cty_code === $countryFilter;
+            });
+        }
+
+        // Apply position filter
+        $positionFilter = $request->input('position');
+        if ($positionFilter && $positionFilter !== 'all') {
+            $allWorkers = $allWorkers->filter(function($worker) use ($positionFilter) {
+                return $worker->workTrade && $worker->workTrade->trade_code === $positionFilter;
             });
         }
 
@@ -107,7 +128,9 @@ class WorkersController extends Controller
             'to' => min($currentPage * $perPage, $total),
         ];
 
-        return view('client.workers', compact('workers', 'stats', 'pagination', 'search', 'statusFilter'));
+        \Log::info('Passing to view - countryFilter: ' . ($countryFilter ?? 'NULL') . ', positionFilter: ' . ($positionFilter ?? 'NULL'));
+
+        return view('client.workers', compact('workers', 'stats', 'pagination', 'search', 'statusFilter', 'countryFilter', 'positionFilter', 'countries', 'positions'));
     }
 
     public function show(Request $request, $workerId)

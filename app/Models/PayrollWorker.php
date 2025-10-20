@@ -64,6 +64,22 @@ class PayrollWorker extends Model
     }
 
     /**
+     * Alias for payrollSubmission relationship
+     */
+    public function submission()
+    {
+        return $this->payrollSubmission();
+    }
+
+    /**
+     * Get the worker details from the worker_db database
+     */
+    public function worker()
+    {
+        return $this->belongsTo(Worker::class, 'worker_id', 'wkr_id');
+    }
+
+    /**
      * Calculate all salary components using PaymentCalculatorService
      *
      * IMPORTANT: OT Payment Deferral

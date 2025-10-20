@@ -95,16 +95,25 @@
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">All Payments</h2>
                 <div class="flex gap-2">
-                    <form method="GET" action="{{ route('client.payments') }}">
-                        <flux:select name="year" onchange="this.form.submit()" class="w-32">
+                    <form method="GET" action="{{ route('client.payments') }}" id="yearFilterForm">
+                        <flux:select variant="listbox" name="year" placeholder="Select year..." size="sm" class="w-auto">
                             @foreach($availableYears as $year)
-                                <option value="{{ $year }}" {{ $year == $selectedYear ? 'selected' : '' }}>
-                                    {{ $year }}
-                                </option>
+                                <flux:select.option value="{{ $year }}" selected="{{ $year == $selectedYear }}">{{ $year }}</flux:select.option>
                             @endforeach
                         </flux:select>
                     </form>
                 </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const yearSelect = document.querySelector('select[name="year"]');
+                        if (yearSelect) {
+                            yearSelect.addEventListener('change', function() {
+                                document.getElementById('yearFilterForm').submit();
+                            });
+                        }
+                    });
+                </script>
             </div>
 
             <div class="overflow-x-auto">

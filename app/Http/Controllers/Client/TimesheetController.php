@@ -107,8 +107,8 @@ class TimesheetController extends Controller
         // Get recent submissions history
         $recentSubmissions = $this->payrollService->getContractorSubmissions($clabNo)->take(5);
 
-        // Get statistics
-        $stats = $this->payrollService->getContractorStatistics($clabNo);
+        // Get statistics (pass the count of remaining/unsubmitted workers)
+        $stats = $this->payrollService->getContractorStatistics($clabNo, $remainingWorkers->count());
 
         return view('client.timesheet', compact(
             'period',
@@ -294,8 +294,25 @@ class TimesheetController extends Controller
         // Get recent submissions history
         $recentSubmissions = $this->payrollService->getContractorSubmissions($clabNo)->take(5);
 
-        // Get statistics
-        $stats = $this->payrollService->getContractorStatistics($clabNo);
+        // Calculate unsubmitted workers count for edit page
+        // Get all active workers and subtract those in ANY submission this month
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+        $allActiveWorkers = $this->contractWorkerService->getActiveContractedWorkers($clabNo);
+        $allSubmissionsThisMonth = \App\Models\PayrollSubmission::where('contractor_clab_no', $clabNo)
+            ->where('month', $currentMonth)
+            ->where('year', $currentYear)
+            ->with('workers')
+            ->get();
+        $submittedWorkerIds = $allSubmissionsThisMonth->flatMap(function($sub) {
+            return $sub->workers->pluck('worker_id');
+        })->unique()->toArray();
+        $unsubmittedCount = $allActiveWorkers->filter(function($worker) use ($submittedWorkerIds) {
+            return !in_array($worker->wkr_id, $submittedWorkerIds);
+        })->count();
+
+        // Get statistics (pass the count of unsubmitted workers)
+        $stats = $this->payrollService->getContractorStatistics($clabNo, $unsubmittedCount);
 
         // Set current submission
         $currentSubmission = $submission;

@@ -20,7 +20,15 @@ class RoleMiddleware
             return redirect()->route('login');
         }
 
-        if (auth()->user()->role !== $role) {
+        $userRole = auth()->user()->role;
+
+        // Super admin has access to all admin routes
+        if ($userRole === 'super_admin') {
+            return $next($request);
+        }
+
+        // Check if user has the required role
+        if ($userRole !== $role) {
             abort(403, 'Unauthorized access.');
         }
 

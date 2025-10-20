@@ -214,7 +214,7 @@ class PayrollService
     /**
      * Get payroll statistics for contractor
      */
-    public function getContractorStatistics(string $clabNo): array
+    public function getContractorStatistics(string $clabNo, ?int $unsubmittedWorkersCount = null): array
     {
         $submissions = PayrollSubmission::byContractor($clabNo)->get();
 
@@ -225,6 +225,7 @@ class PayrollService
             'overdue_submissions' => $submissions->where('status', 'overdue')->count(),
             'total_paid_amount' => $submissions->where('status', 'paid')->sum('total_with_penalty'),
             'total_pending_amount' => $submissions->whereIn('status', ['pending_payment', 'overdue'])->sum('total_with_penalty'),
+            'unsubmitted_workers' => $unsubmittedWorkersCount ?? 0,
         ];
     }
 

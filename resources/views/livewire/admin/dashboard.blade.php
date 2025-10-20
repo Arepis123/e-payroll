@@ -1,4 +1,4 @@
-<x-layouts.app :title="__('Dashboard')">
+<div>
     <!-- Carousel News Notification Modal -->
     <div id="newsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] opacity-0 invisible transition-all duration-300">
         <div class="relative w-full max-w-2xl mx-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300">
@@ -55,7 +55,7 @@
                         <div class="md:w-2/3 p-8">
                             <h2 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Outstanding Balance</h2>
                             <p class="text-zinc-600 dark:text-zinc-400 mb-4">
-                                There is an outstanding balance of <span class="font-bold text-orange-600 dark:text-orange-400 text-xl">RM 125,400</span> in unpaid invoices that need to be settled.
+                                There is an outstanding balance of <span class="font-bold text-orange-600 dark:text-orange-400 text-xl">RM {{ number_format($stats['outstanding_balance']) }}</span> in unpaid invoices that need to be settled.
                             </p>
                             <flux:button variant="primary" href="{{ route('admin.salary') }}" wire:navigate onclick="closeNewsModal()">
                                 <flux:icon.wallet class="size-4" />
@@ -107,14 +107,14 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Clients</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">24</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $stats['total_clients'] }}</p>
                     </div>
                     <div class="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
                         <flux:icon.building-office-2 class="size-6 text-blue-600 dark:text-blue-400" />
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    <span class="text-green-600 dark:text-green-400">+2</span>
+                    <span class="text-green-600 dark:text-green-400">+{{ $stats['clients_growth'] }}</span>
                     <span class="text-zinc-600 dark:text-zinc-400">from last month</span>
                 </div>
             </flux:card>
@@ -124,14 +124,14 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Active Workers</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">342</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $stats['active_workers'] }}</p>
                     </div>
                     <div class="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
                         <flux:icon.users class="size-6 text-green-600 dark:text-green-400" />
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    <span class="text-green-600 dark:text-green-400">+18</span>
+                    <span class="text-green-600 dark:text-green-400">+{{ $stats['workers_growth'] }}</span>
                     <span class="text-zinc-600 dark:text-zinc-400">from last month</span>
                 </div>
             </flux:card>
@@ -141,14 +141,14 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">This Month Payments</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 486,250</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($stats['this_month_payments']) }}</p>
                     </div>
                     <div class="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3">
                         <flux:icon.wallet class="size-6 text-purple-600 dark:text-purple-400" />
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    <span class="text-green-600 dark:text-green-400">+12.5%</span>
+                    <span class="text-green-600 dark:text-green-400">+{{ $stats['payments_growth'] }}%</span>
                     <span class="text-zinc-600 dark:text-zinc-400">from last month</span>
                 </div>
             </flux:card>
@@ -158,7 +158,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Outstanding Balance</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 125,400</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($stats['outstanding_balance']) }}</p>
                     </div>
                     <div class="rounded-full bg-orange-100 dark:bg-orange-900/30 p-3">
                         <flux:icon.exclamation-circle class="size-6 text-orange-600 dark:text-orange-400" />
@@ -191,51 +191,19 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                            @foreach($recentPayments as $payment)
                             <tr>
-                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">Miqabina Sdn Bhd</td>
-                                <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 45,200</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">12 workers</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Jan 15, 2025</td>
+                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $payment['client'] }}</td>
+                                <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM {{ number_format($payment['amount']) }}</td>
+                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $payment['workers'] }} workers</td>
+                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $payment['date'] }}</td>
                                 <td class="py-3">
-                                    <flux:badge color="green" size="sm">Completed</flux:badge>
+                                    <flux:badge color="{{ $payment['status'] === 'completed' ? 'green' : 'yellow' }}" size="sm">
+                                        {{ ucfirst($payment['status']) }}
+                                    </flux:badge>
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">WCT Berhad</td>
-                                <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 32,100</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">8 workers</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Jan 14, 2025</td>
-                                <td class="py-3">
-                                    <flux:badge color="green" size="sm">Completed</flux:badge>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">Chuan Luck Piling Sdn Bhd</td>
-                                <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 28,500</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">6 workers</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Jan 13, 2025</td>
-                                <td class="py-3">
-                                    <flux:badge color="yellow" size="sm">Pending</flux:badge>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">Best Stone Sdn Bhd</td>
-                                <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 52,800</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">15 workers</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Jan 12, 2025</td>
-                                <td class="py-3">
-                                    <flux:badge color="green" size="sm">Completed</flux:badge>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">AIMA Construction Sdn Bhd</td>
-                                <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 18,900</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">5 workers</td>
-                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Jan 11, 2025</td>
-                                <td class="py-3">
-                                    <flux:badge color="green" size="sm">Completed</flux:badge>
-                                </td>
-                            </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -270,7 +238,7 @@
                             <flux:icon.exclamation-triangle class="size-5 flex-shrink-0 text-orange-600 dark:text-orange-400" />
                             <div>
                                 <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Outstanding Balance</p>
-                                <p class="text-xs text-zinc-600 dark:text-zinc-400">RM 125,400 in unpaid invoices</p>
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400">RM {{ number_format($stats['outstanding_balance']) }} in unpaid invoices</p>
                             </div>
                         </div>
 
@@ -311,13 +279,15 @@
             const textColor = isDark ? '#d4d4d8' : '#3f3f46';
             const gridColor = isDark ? '#3f3f46' : '#e4e4e7';
 
+            const chartData = @json($chartData);
+
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    labels: chartData.labels,
                     datasets: [{
                         label: 'Total Payments (RM)',
-                        data: [420000, 385000, 450000, 478000, 495000, 512000, 488000, 502000, 475000, 490000, 468000, 486250],
+                        data: chartData.totalPayments,
                         borderColor: '#8b5cf6',
                         backgroundColor: 'rgba(139, 92, 246, 0.1)',
                         tension: 0.4,
@@ -329,7 +299,7 @@
                         pointHoverRadius: 6
                     }, {
                         label: 'Number of Payments',
-                        data: [15, 14, 16, 17, 18, 19, 17, 18, 16, 17, 16, 18],
+                        data: chartData.numberOfPayments,
                         borderColor: '#3b82f6',
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         tension: 0.4,
@@ -555,4 +525,4 @@
             });
         });
     </script>
-</x-layouts.app>
+</div>

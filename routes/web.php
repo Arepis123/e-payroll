@@ -6,24 +6,24 @@ use App\Livewire\Settings\Profile;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 })->name('home');
 
 // Admin Routes
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::view('dashboard', 'admin.dashboard')->name('dashboard');
-    Route::view('worker', 'admin.worker')->name('worker');
-    Route::view('salary', 'admin.salary')->name('salary');
-    Route::view('report', 'admin.report')->name('report');
+    Route::get('dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
+    Route::get('worker', \App\Livewire\Admin\Worker::class)->name('worker');
+    Route::get('workers/{worker}', [\App\Http\Controllers\Admin\WorkerController::class, 'show'])->name('workers.show');
+    Route::get('salary', \App\Livewire\Admin\Salary::class)->name('salary');
+    Route::get('report', \App\Livewire\Admin\Report::class)->name('report');
 });
 
 // Client/Contractor Routes
 Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('client.')->group(function () {
     Route::get('dashboard', [\App\Http\Controllers\Client\DashboardController::class, 'index'])->name('dashboard');
-    Route::get('workers', [\App\Http\Controllers\Client\WorkersController::class, 'index'])->name('workers');
+    Route::get('workers', \App\Livewire\Client\Workers::class)->name('workers');
     Route::get('workers/{worker}', [\App\Http\Controllers\Client\WorkersController::class, 'show'])->name('workers.show');
-    Route::get('timesheet', [\App\Http\Controllers\Client\TimesheetController::class, 'index'])->name('timesheet');
-    Route::post('timesheet', [\App\Http\Controllers\Client\TimesheetController::class, 'store'])->name('timesheet.store');
+    Route::get('timesheet', \App\Livewire\Client\Timesheet::class)->name('timesheet');
     Route::get('timesheet/{id}', [\App\Http\Controllers\Client\TimesheetController::class, 'show'])->name('timesheet.show');
     Route::get('timesheet/{id}/edit', [\App\Http\Controllers\Client\TimesheetController::class, 'edit'])->name('timesheet.edit');
     Route::post('timesheet/{id}/submit', [\App\Http\Controllers\Client\TimesheetController::class, 'submitDraft'])->name('timesheet.submit');
@@ -31,8 +31,8 @@ Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('
     // Payment routes
     Route::post('payment/{submission}', [\App\Http\Controllers\Client\PaymentController::class, 'createPayment'])->name('payment.create');
 
-    Route::get('payments', [\App\Http\Controllers\Client\PaymentHistoryController::class, 'index'])->name('payments');
-    Route::get('invoices', [\App\Http\Controllers\Client\InvoiceController::class, 'index'])->name('invoices');
+    Route::get('payments', \App\Livewire\Client\Payments::class)->name('payments');
+    Route::get('invoices', \App\Livewire\Client\Invoices::class)->name('invoices');
     Route::get('invoices/{id}', [\App\Http\Controllers\Client\InvoiceController::class, 'show'])->name('invoices.show');
     Route::get('invoices/{id}/download', [\App\Http\Controllers\Client\InvoiceController::class, 'download'])->name('invoices.download');
 });

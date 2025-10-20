@@ -13,7 +13,7 @@
             required
             autofocus
             autocomplete="username"
-            placeholder="your_username"
+            placeholder="CLABID"
         />
 
         <!-- Password -->

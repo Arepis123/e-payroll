@@ -1,11 +1,10 @@
 @php
     // Calculate salary details
-    $basicSalary = $worker->basic_salary ?? 1700; // Minimum RM 1,700
+    $basicSalary = $worker->basic_salary ?? $worker->wkr_salary ?? 1700; // Minimum RM 1,700
     $epfDeduction = $basicSalary * 0.02; // 2% EPF deduction
     $netSalary = $basicSalary - $epfDeduction;
 
     // Contract information
-    $contract = $worker->contract_info;
     $contractActive = $contract && $contract->isActive();
     $daysRemaining = $contract ? $contract->daysRemaining() : 0;
 @endphp
@@ -28,7 +27,7 @@
                 </div>
             </div>
             <div>
-                <flux:button variant="filled" icon="arrow-left" href="{{ route('client.workers') }}" wire:navigate>
+                <flux:button variant="filled" icon="arrow-left" href="{{ route('admin.worker') }}" wire:navigate>
                     Back to Workers
                 </flux:button>
             </div>
@@ -89,7 +88,13 @@
                         </div>
                         <div>
                             <p class="text-sm text-zinc-600 dark:text-zinc-400">Position/Trade</p>
-                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->position ?? 'General Worker' }}</p>
+                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                                @if($worker->workTrade)
+                                    {{ $worker->workTrade->trade_desc }}
+                                @else
+                                    General Worker
+                                @endif
+                            </p>
                         </div>
                         <div>
                             <p class="text-sm text-zinc-600 dark:text-zinc-400">Nationality</p>
@@ -115,7 +120,7 @@
                         </div>
                         <div>
                             <p class="text-sm text-zinc-600 dark:text-zinc-400">Phone</p>
-                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->phone ?? '-' }}</p>
+                            <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">{{ $worker->wkr_tel ?? '-' }}</p>
                         </div>
                     </div>
                 </flux:card>
@@ -157,6 +162,16 @@
                                         <flux:badge color="red">Expired</flux:badge>
                                     @endif
                                 </div>
+                            </div>
+                            <div>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400">Current Employer</p>
+                                <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                                    @if($worker->contractor)
+                                        {{ $worker->contractor->ctr_name }}
+                                    @else
+                                        -
+                                    @endif
+                                </p>
                             </div>
                         </div>
 

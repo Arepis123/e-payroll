@@ -53,22 +53,22 @@
                 </div>
             </flux:card>
 
-            <!-- Pending Approvals -->
+            <!-- Outstanding Balance -->
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Pending Approvals</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $paymentStats['pending_approvals'] }}</p>
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Outstanding Balance</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($paymentStats['outstanding_balance'], 2) }}</p>
                     </div>
                     <div class="rounded-full bg-orange-100 dark:bg-orange-900/30 p-3">
-                        <flux:icon.clock class="size-6 text-orange-600 dark:text-orange-400" />
+                        <flux:icon.exclamation-circle class="size-6 text-orange-600 dark:text-orange-400" />
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    @if($paymentStats['pending_approvals'] > 0)
-                        <span class="text-orange-600 dark:text-orange-400">Requires your attention</span>
+                    @if($paymentStats['outstanding_balance'] > 0)
+                        <span class="text-orange-600 dark:text-orange-400">Pending & unpaid</span>
                     @else
-                        <span class="text-zinc-600 dark:text-zinc-400">All caught up</span>
+                        <span class="text-green-600 dark:text-green-400">All paid up</span>
                     @endif
                 </div>
             </flux:card>
@@ -214,13 +214,24 @@
                             $hasNotifications = false;
                         @endphp
 
-                        @if($paymentStats['this_month_deadline'] && $paymentStats['this_month_deadline']->isAfter(now()) && $paymentStats['this_month_deadline']->diffInDays(now()) <= 7)
+                        @if($paymentStats['this_month_deadline'] && $paymentStats['this_month_status'] !== 'paid' && $paymentStats['this_month_deadline']->isAfter(now()) && $paymentStats['this_month_deadline']->diffInDays(now()) <= 7)
                             @php $hasNotifications = true; @endphp
                             <div class="flex gap-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-3">
                                 <flux:icon.exclamation-triangle class="size-5 flex-shrink-0 text-orange-600 dark:text-orange-400" />
                                 <div>
                                     <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Payment Deadline Approaching</p>
                                     <p class="text-xs text-zinc-600 dark:text-zinc-400">Payment due {{ $paymentStats['this_month_deadline']->format('M d, Y') }}</p>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($paymentStats['unsubmitted_workers'] > 0)
+                            @php $hasNotifications = true; @endphp
+                            <div class="flex gap-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
+                                <flux:icon.exclamation-circle class="size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                                <div>
+                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Timesheet Needed</p>
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">{{ $paymentStats['unsubmitted_workers'] }} {{ Str::plural('worker', $paymentStats['unsubmitted_workers']) }} need timesheet submission this month</p>
                                 </div>
                             </div>
                         @endif
@@ -236,13 +247,13 @@
                             </div>
                         @endif
 
-                        @if($paymentStats['pending_approvals'] > 0)
+                        @if($paymentStats['outstanding_balance'] > 0)
                             @php $hasNotifications = true; @endphp
-                            <div class="flex gap-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
-                                <flux:icon.information-circle class="size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                            <div class="flex gap-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-3">
+                                <flux:icon.exclamation-circle class="size-5 flex-shrink-0 text-orange-600 dark:text-orange-400" />
                                 <div>
-                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Pending Submissions</p>
-                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">{{ $paymentStats['pending_approvals'] }} {{ Str::plural('submission', $paymentStats['pending_approvals']) }} awaiting payment</p>
+                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Outstanding Balance</p>
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">RM {{ number_format($paymentStats['outstanding_balance'], 2) }} pending payment</p>
                                 </div>
                             </div>
                         @endif
