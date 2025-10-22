@@ -11,13 +11,19 @@ class WorkerController extends Controller
     public function show($workerId)
     {
         // Get worker from the worker_db database with all relationships
-        $worker = Worker::with(['country', 'workTrade', 'contracts'])
+        $worker = Worker::with(['country', 'workTrade', 'contracts.contractor'])
             ->where('wkr_id', $workerId)
             ->firstOrFail();
 
         // Get the active contract
         $contract = $worker->activeContract;
 
-        return view('admin.workers.show', compact('worker', 'contract'));
+        // Get all contracts ordered by start date (most recent first)
+        $contractHistory = $worker->contracts()
+            ->with('contractor')
+            ->orderBy('con_start', 'desc')
+            ->get();
+
+        return view('admin.workers.show', compact('worker', 'contract', 'contractHistory'));
     }
 }

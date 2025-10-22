@@ -170,13 +170,17 @@ class PaymentCalculatorService
      * @param float $weekdayOTHours Weekday overtime hours
      * @param float $restDayOTHours Rest day overtime hours
      * @param float $publicHolidayOTHours Public holiday overtime hours
+     * @param float $advancePayment Advance payment to worker (loan)
+     * @param float $deduction Deduction from worker's salary
      * @return array Complete payment breakdown
      */
     public function calculateWorkerPayment(
         float $basicSalary,
         float $weekdayOTHours = 0,
         float $restDayOTHours = 0,
-        float $publicHolidayOTHours = 0
+        float $publicHolidayOTHours = 0,
+        float $advancePayment = 0,
+        float $deduction = 0
     ): array {
         // Basic salary calculations
         $workerEPF = $this->calculateWorkerEPF($basicSalary);
@@ -198,8 +202,9 @@ class PaymentCalculatorService
         );
 
         // Total calculations
-        $totalGrossPay = $basicSalary + $overtimePay;
-        $totalNetPay = $netBasicSalary + $overtimePay;
+        // Formula: Jumlah Gaji = Basic + OT + Advance Payment - Deduction
+        $totalGrossPay = $basicSalary + $overtimePay + $advancePayment - $deduction;
+        $totalNetPay = $netBasicSalary + $overtimePay + $advancePayment - $deduction;
         $totalPaymentToCLAB = $basicSalary + $totalEmployerContributions + $overtimePay;
 
         return [
@@ -222,6 +227,10 @@ class PaymentCalculatorService
             'public_holiday_ot_rate' => $this->calculatePublicHolidayOTRate($basicSalary),
             'total_overtime_pay' => $overtimePay,
 
+            // Additional adjustments
+            'advance_payment' => $advancePayment,
+            'deduction' => $deduction,
+
             // Totals
             'total_gross_pay' => $totalGrossPay,
             'total_net_pay' => $totalNetPay,
@@ -243,6 +252,8 @@ class PaymentCalculatorService
             'Worker Deductions (EPF + SOCSO)' => 'RM ' . number_format($paymentBreakdown['total_worker_deductions'], 2),
             'Net Basic Salary' => 'RM ' . number_format($paymentBreakdown['net_basic_salary'], 2),
             'Overtime Pay' => 'RM ' . number_format($paymentBreakdown['total_overtime_pay'], 2),
+            'Advance Payment' => 'RM ' . number_format($paymentBreakdown['advance_payment'], 2),
+            'Deduction' => 'RM ' . number_format($paymentBreakdown['deduction'], 2),
             'Total Net Pay (Worker Receives)' => 'RM ' . number_format($paymentBreakdown['total_net_pay'], 2),
             'Employer Contributions' => 'RM ' . number_format($paymentBreakdown['total_employer_contributions'], 2),
             'Total Payment to CLAB' => 'RM ' . number_format($paymentBreakdown['total_payment_to_clab'], 2),

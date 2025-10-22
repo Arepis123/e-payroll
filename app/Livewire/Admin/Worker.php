@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Exports\WorkersExport;
+use App\Models\ContractWorker;
 use App\Models\PayrollWorker;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
@@ -90,14 +91,14 @@ class Worker extends Component
 
     protected function loadClients()
     {
-        // Get unique clients (users with role 'client' who have submitted payrolls)
-        $this->clients = PayrollWorker::with('payrollSubmission.user')
+        // Get unique contractors from contract_worker table
+        $this->clients = ContractWorker::with('contractor')
             ->get()
-            ->pluck('payrollSubmission.user')
+            ->pluck('contractor')
             ->filter()
-            ->unique('id')
-            ->sortBy('name')
-            ->pluck('name', 'id')
+            ->unique('ctr_clab_no')
+            ->sortBy('ctr_comp_name')
+            ->pluck('ctr_comp_name', 'ctr_clab_no')
             ->toArray();
     }
 
@@ -120,41 +121,31 @@ class Worker extends Component
      */
     protected function getAllWorkersForFilters()
     {
-        // Get unique workers with their latest submission data (no filters applied)
-        $query = PayrollWorker::select(
-            'worker_id',
-            'worker_name',
-            'worker_passport',
-            'basic_salary',
-            'payroll_submission_id',
-            DB::raw('MAX(created_at) as latest_date')
-        )
-        ->groupBy('worker_id', 'worker_name', 'worker_passport', 'basic_salary', 'payroll_submission_id');
-
-        $workers = $query->with(['payrollSubmission.user', 'worker.country'])
-            ->orderBy('latest_date', 'desc')
+        // Get all contracted workers with worker details
+        $contractWorkers = ContractWorker::with(['worker.country', 'contractor'])
             ->get();
 
         // Transform the data
-        return $workers->map(function ($worker) {
+        return $contractWorkers->map(function ($contractWorker) {
+            $worker = $contractWorker->worker;
+            $contractor = $contractWorker->contractor;
+
             return [
-                'id' => $worker->worker_id,
-                'employee_id' => $worker->worker_id,
-                'name' => $worker->worker_name,
-                'passport' => $worker->worker_passport,
+                'id' => $contractWorker->con_wkr_id,
+                'employee_id' => $contractWorker->con_wkr_id,
+                'name' => $worker ? $worker->wkr_name : 'N/A',
+                'passport' => $contractWorker->con_wkr_passno,
                 'position' => 'General Worker', // TODO: Add position field to database
-                'client' => $worker->payrollSubmission && $worker->payrollSubmission->user
-                    ? $worker->payrollSubmission->user->name
+                'client' => $contractor ? $contractor->ctr_comp_name : 'N/A',
+                'salary' => 1700, // Default minimum salary
+                'passport_expiry' => $worker && $worker->wkr_passexp
+                    ? $worker->wkr_passexp->format('d/m/Y')
                     : 'N/A',
-                'salary' => $worker->basic_salary,
-                'passport_expiry' => $worker->worker && $worker->worker->wkr_passexp
-                    ? $worker->worker->wkr_passexp->format('d/m/Y')
+                'permit_expiry' => $worker && $worker->wkr_permitexp
+                    ? $worker->wkr_permitexp->format('d/m/Y')
                     : 'N/A',
-                'permit_expiry' => $worker->worker && $worker->worker->wkr_permitexp
-                    ? $worker->worker->wkr_permitexp->format('d/m/Y')
-                    : 'N/A',
-                'country' => $worker->worker && $worker->worker->country
-                    ? $worker->worker->country->cty_desc
+                'country' => $worker && $worker->country
+                    ? $worker->country->cty_desc
                     : 'N/A',
             ];
         })->unique('employee_id');
@@ -162,22 +153,20 @@ class Worker extends Component
 
     protected function loadStats()
     {
-        // Get unique workers from payroll_workers table
-        $totalWorkers = PayrollWorker::distinct('worker_id')->count('worker_id');
+        // Get total contracted workers
+        $totalWorkers = ContractWorker::distinct('con_wkr_id')->count('con_wkr_id');
 
-        // For now, we'll calculate based on recent activity
-        // Active workers are those who appeared in submissions within last 3 months
-        $threeMonthsAgo = now()->subMonths(3);
-        $activeWorkers = PayrollWorker::whereHas('submission', function ($query) use ($threeMonthsAgo) {
-            $query->where('created_at', '>=', $threeMonthsAgo);
-        })->distinct('worker_id')->count('worker_id');
+        // Active workers have contracts that haven't expired yet
+        $activeWorkers = ContractWorker::active()->distinct('con_wkr_id')->count('con_wkr_id');
 
-        // Mock data for on_leave and inactive until we have worker status tracking
+        // Inactive workers have expired contracts
+        $inactiveWorkers = ContractWorker::expired()->distinct('con_wkr_id')->count('con_wkr_id');
+
         $this->stats = [
             'total' => $totalWorkers,
             'active' => $activeWorkers,
             'on_leave' => 0, // TODO: Add worker status tracking
-            'inactive' => $totalWorkers - $activeWorkers,
+            'inactive' => $inactiveWorkers,
         ];
     }
 
@@ -203,69 +192,56 @@ class Worker extends Component
 
     public function getWorkersData()
     {
-        // Get unique workers with their latest submission data
-        $query = PayrollWorker::select(
-            'worker_id',
-            'worker_name',
-            'worker_passport',
-            'basic_salary',
-            'payroll_submission_id',
-            DB::raw('MAX(created_at) as latest_date')
-        )
-        ->groupBy('worker_id', 'worker_name', 'worker_passport', 'basic_salary', 'payroll_submission_id');
+        // Start with all contracted workers
+        $query = ContractWorker::with(['worker.country', 'contractor']);
 
         // Apply search filter
         if ($this->search) {
             $query->where(function ($q) {
-                $q->where('worker_name', 'like', '%' . $this->search . '%')
-                  ->orWhere('worker_id', 'like', '%' . $this->search . '%')
-                  ->orWhere('worker_passport', 'like', '%' . $this->search . '%');
+                $q->where('con_wkr_id', 'like', '%' . $this->search . '%')
+                  ->orWhere('con_wkr_passno', 'like', '%' . $this->search . '%')
+                  ->orWhereHas('worker', function ($workerQuery) {
+                      $workerQuery->where('wkr_name', 'like', '%' . $this->search . '%');
+                  });
             });
         }
 
         // Apply client filter
         if ($this->clientFilter) {
-            $query->whereHas('payrollSubmission.user', function ($q) {
-                $q->where('id', $this->clientFilter);
-            });
+            $query->where('con_ctr_clab_no', $this->clientFilter);
         }
 
-        // Get the workers with their submission data
-        $workers = $query->with(['payrollSubmission.user', 'worker.country'])
-            ->orderBy('latest_date', 'desc')
-            ->get();
+        // Get the contracted workers
+        $contractWorkers = $query->get();
 
         // Transform the data
-        $transformedWorkers = $workers->map(function ($worker) {
-            // Determine status based on last activity
-            $lastActivity = $worker->latest_date ? \Carbon\Carbon::parse($worker->latest_date) : null;
-            $isActive = $lastActivity && $lastActivity->isAfter(now()->subMonths(3));
+        $transformedWorkers = $contractWorkers->map(function ($contractWorker) {
+            $worker = $contractWorker->worker;
+            $contractor = $contractWorker->contractor;
 
-            $status = $isActive ? 'Active' : 'Inactive';
-
-            // Get client name from submission
-            $clientName = $worker->payrollSubmission && $worker->payrollSubmission->user
-                ? $worker->payrollSubmission->user->name
-                : 'N/A';
+            // Determine status based on contract expiry
+            $status = $contractWorker->isActive() ? 'Active' : 'Inactive';
 
             return [
-                'id' => $worker->worker_id,
-                'employee_id' => $worker->worker_id,
-                'name' => $worker->worker_name,
-                'passport' => $worker->worker_passport,
+                'id' => $contractWorker->con_wkr_id,
+                'employee_id' => $contractWorker->con_wkr_id,
+                'name' => $worker ? $worker->wkr_name : 'N/A',
+                'passport' => $contractWorker->con_wkr_passno,
                 'position' => 'General Worker', // TODO: Add position field to database
-                'client' => $clientName,
-                'salary' => $worker->basic_salary,
+                'client' => $contractor ? $contractor->ctr_comp_name : 'N/A',
+                'salary' => 1700, // Default minimum salary
                 'status' => $status,
-                'passport_expiry' => $worker->worker && $worker->worker->wkr_passexp
-                    ? $worker->worker->wkr_passexp->format('d/m/Y')
+                'passport_expiry' => $worker && $worker->wkr_passexp
+                    ? $worker->wkr_passexp->format('d/m/Y')
                     : 'N/A',
-                'permit_expiry' => $worker->worker && $worker->worker->wkr_permitexp
-                    ? $worker->worker->wkr_permitexp->format('d/m/Y')
+                'permit_expiry' => $worker && $worker->wkr_permitexp
+                    ? $worker->wkr_permitexp->format('d/m/Y')
                     : 'N/A',
-                'country' => $worker->worker && $worker->worker->country
-                    ? $worker->worker->country->cty_desc
+                'country' => $worker && $worker->country
+                    ? $worker->country->cty_desc
                     : 'N/A',
+                'contract_start' => $contractWorker->con_start ? $contractWorker->con_start->format('d/m/Y') : 'N/A',
+                'contract_end' => $contractWorker->con_end ? $contractWorker->con_end->format('d/m/Y') : 'N/A',
             ];
         })->unique('employee_id');
 

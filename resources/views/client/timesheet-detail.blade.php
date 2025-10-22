@@ -8,13 +8,9 @@
             </div>
             <div class="flex gap-2">
                 @if($submission->status === 'draft')
-                    <form method="POST" action="{{ route('client.timesheet.submit', $submission->id) }}" class="inline">
-                        @csrf
-                        <flux:button type="submit" variant="primary">
-                            <flux:icon.check class="size-4 inline"/>
-                            Submit for Payment
-                        </flux:button>
-                    </form>
+                    <flux:button variant="primary" icon="pencil" href="{{ route('client.timesheet.edit', $submission->id) }}">
+                        Edit Draft
+                    </flux:button>
                 @endif
                 <flux:button variant="outline" href="{{ route('client.timesheet') }}">
                     <flux:icon.arrow-left class="size-4 inline" />
@@ -118,6 +114,7 @@
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Normal</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Rest</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Public</th>
+                            <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Transactions</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Gross Salary</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Deductions</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Net Salary</th>
@@ -151,6 +148,41 @@
                                 {{ $worker->ot_public_hours }}h<br>
                                 <span class="text-xs">RM {{ number_format($worker->ot_public_pay, 2) }}</span>
                             </td>
+                            <td class="py-3">
+                                @php
+                                    $workerTransactions = $worker->transactions ?? collect([]);
+                                    $advancePayments = $workerTransactions->where('type', 'advance_payment');
+                                    $deductions = $workerTransactions->where('type', 'deduction');
+                                @endphp
+                                @if($workerTransactions->count() > 0)
+                                    <div class="space-y-1">
+                                        @if($advancePayments->count() > 0)
+                                            <div class="text-xs text-right">
+                                                <span class="font-medium text-green-600 dark:text-green-400">Advance Payment:</span>
+                                                @foreach($advancePayments as $transaction)
+                                                    <div class="ml-2 text-zinc-600 dark:text-zinc-400">
+                                                        • RM {{ number_format($transaction->amount, 2) }}
+                                                        <span class="text-xs italic">({{ $transaction->remarks }})</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                        @if($deductions->count() > 0)
+                                            <div class="text-xs text-right">
+                                                <span class="font-medium text-red-600 dark:text-red-400">Deduction:</span>
+                                                @foreach($deductions as $transaction)
+                                                    <div class="ml-2 text-zinc-600 dark:text-zinc-400">
+                                                        • RM {{ number_format($transaction->amount, 2) }}
+                                                        <span class="text-xs italic">({{ $transaction->remarks }})</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                @else
+                                    <span class="text-xs text-zinc-400 dark:text-zinc-500">-</span>
+                                @endif
+                            </td>
                             <td class="py-3 text-right text-sm font-medium text-zinc-900 dark:text-zinc-100">
                                 RM {{ number_format($worker->gross_salary, 2) }}
                             </td>
@@ -172,7 +204,7 @@
                     </tbody>
                     <tfoot>
                         <tr class="border-t-2 border-zinc-300 dark:border-zinc-600">
-                            <td colspan="8" class="py-4 text-right text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                            <td colspan="9" class="py-4 text-right text-sm font-bold text-zinc-900 dark:text-zinc-100">
                                 Total Amount:
                             </td>
                             <td class="py-4 text-right text-lg font-bold text-zinc-900 dark:text-zinc-100">
@@ -181,7 +213,7 @@
                         </tr>
                         @if($submission->has_penalty)
                         <tr>
-                            <td colspan="8" class="py-2 text-right text-sm font-semibold text-red-600 dark:text-red-400">
+                            <td colspan="9" class="py-2 text-right text-sm font-semibold text-red-600 dark:text-red-400">
                                 Late Payment Penalty (8%):
                             </td>
                             <td class="py-2 text-right text-sm font-semibold text-red-600 dark:text-red-400">
@@ -189,7 +221,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="8" class="py-2 text-right text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                            <td colspan="9" class="py-2 text-right text-sm font-bold text-zinc-900 dark:text-zinc-100">
                                 Total with Penalty:
                             </td>
                             <td class="py-2 text-right text-lg font-bold text-red-600 dark:text-red-400">

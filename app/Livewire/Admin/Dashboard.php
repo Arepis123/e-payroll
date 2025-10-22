@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\PayrollSubmission;
 use App\Models\PayrollWorker;
 use App\Models\PayrollPayment;
+use App\Models\News;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Livewire\Component;
@@ -15,12 +16,19 @@ class Dashboard extends Component
     public $stats = [];
     public $recentPayments = [];
     public $chartData = [];
+    public $newsItems = [];
 
     public function mount()
     {
         $this->loadStats();
         $this->loadRecentPayments();
         $this->loadChartData();
+        $this->loadNews();
+    }
+
+    protected function loadNews()
+    {
+        $this->newsItems = News::active()->get();
     }
 
     protected function loadStats()

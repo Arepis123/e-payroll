@@ -7,6 +7,7 @@
                 <flux:icon.x-mark class="size-5 text-zinc-600 dark:text-zinc-400" />
             </button>
 
+            @if($newsItems->count() > 0)
             <!-- Carousel Navigation - Top -->
             <div class="absolute top-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm px-4 py-2 rounded-full z-10">
                 <button onclick="prevSlide()" class="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
@@ -14,9 +15,9 @@
                 </button>
 
                 <div class="flex gap-2">
-                    <button onclick="goToSlide(0)" class="carousel-dot w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 transition-all"></button>
-                    <button onclick="goToSlide(1)" class="carousel-dot w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 transition-all"></button>
-                    <button onclick="goToSlide(2)" class="carousel-dot w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 transition-all"></button>
+                    @foreach($newsItems as $index => $item)
+                    <button onclick="goToSlide({{ $index }})" class="carousel-dot w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 transition-all"></button>
+                    @endforeach
                 </div>
 
                 <button onclick="nextSlide()" class="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
@@ -26,60 +27,44 @@
 
             <!-- Carousel Container -->
             <div id="carouselContainer" class="relative pt-14">
-                <!-- Slide 1: Welcome -->
-                <div class="carousel-slide active">
-                    <div class="flex flex-col md:flex-row">
-                        <div class="md:w-1/3 bg-gradient-to-br from-blue-500 to-purple-600 p-8 flex items-center justify-center">
-                            <flux:icon.hand-raised class="size-24 text-white opacity-90" />
-                        </div>
-                        <div class="md:w-2/3 p-8">
-                            <h2 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Welcome Back!</h2>
-                            <p class="text-zinc-600 dark:text-zinc-400 mb-4">
-                                Hello, <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ auth()->user()->name }}</span>!
-                                You have successfully logged in to e-Salary CLAB system.
-                            </p>
-                            <div class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                <flux:icon.calendar class="size-4" />
-                                <span>{{ now()->format('l, F j, Y') }}</span>
+                @foreach($newsItems as $index => $news)
+                    <!-- News Slide with Image -->
+                    <div class="carousel-slide {{ $index === 0 ? 'active' : '' }}">
+                        <div class="flex flex-col">
+                            @if($news->image_path)
+                            <div class="w-full relative group">
+                                <img
+                                    src="{{ asset('storage/' . $news->image_path) }}"
+                                    alt="{{ $news->title }}"
+                                    class="w-full h-auto object-cover max-h-96 cursor-pointer transition-opacity hover:opacity-90"
+                                    onclick="const win = window.open('{{ asset('storage/' . $news->image_path) }}', '_blank'); if(win) win.opener = null;"
+                                    title="Click to view full image in new tab"
+                                />
+                                <!-- Zoom hint overlay - centered -->
+                                <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    <div class="bg-white/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 px-4 py-2 rounded-lg flex items-center gap-2">
+                                        <flux:icon.magnifying-glass-plus class="size-5" />
+                                        <span class="font-medium">Click to view full image</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
+                            <div class="p-6 bg-white dark:bg-zinc-900">
+                                <h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{{ $news->title }}</h2>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                                    {!! nl2br(e($news->description)) !!}
+                                </p>
+                                @if($news->button_text && $news->button_url)
+                                    <flux:button variant="primary" href="{{ $news->button_url }}" wire:navigate onclick="closeNewsModal()">
+                                        {{ $news->button_text }}
+                                    </flux:button>
+                                @endif
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Slide 2: Outstanding Balance Alert -->
-                <div class="carousel-slide">
-                    <div class="flex flex-col md:flex-row">
-                        <div class="md:w-1/3 bg-gradient-to-br from-orange-500 to-red-600 p-8 flex items-center justify-center">
-                            <flux:icon.exclamation-triangle class="size-24 text-white opacity-90" />
-                        </div>
-                        <div class="md:w-2/3 p-8">
-                            <h2 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Outstanding Balance</h2>
-                            <p class="text-zinc-600 dark:text-zinc-400 mb-4">
-                                There is an outstanding balance of <span class="font-bold text-orange-600 dark:text-orange-400 text-xl">RM {{ number_format($stats['outstanding_balance']) }}</span> in unpaid invoices that need to be settled.
-                            </p>
-                            <flux:button variant="primary" href="{{ route('admin.salary') }}" wire:navigate onclick="closeNewsModal()">
-                                <flux:icon.wallet class="size-4" />
-                                View Salary Management
-                            </flux:button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Slide 3: Image Slide -->
-                <div class="carousel-slide">
-                    <div class="flex flex-col">
-                        <div class="w-full">
-                            <img src="{{ asset('images/test.jpg') }}" alt="Announcement" class="w-full h-auto object-cover max-h-96" />
-                        </div>
-                        <div class="p-6 bg-white dark:bg-zinc-900">
-                            <h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Special Announcement</h2>
-                            <p class="text-sm text-zinc-600 dark:text-zinc-400">
-                                Stay tuned for more updates and features coming to e-Salary CLAB.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                @endforeach
             </div>
+            @endif
 
             <!-- Progress Bar -->
             <div class="absolute bottom-0 left-0 right-0 h-1 bg-zinc-200 dark:bg-zinc-700">
@@ -493,36 +478,34 @@
             }
         }
 
-        // Show modal on page load (always)
+        // Show modal on page load if there are news items
         document.addEventListener('DOMContentLoaded', function() {
-            // Always show modal when user visits Dashboard
-            setTimeout(() => {
-                showNewsModal();
-            }, 500); // Show after 500ms delay
+            const slides = document.querySelectorAll('.carousel-slide');
 
-            // Initialize first slide
-            goToSlide(0);
+            // Only show modal if there are news items
+            if (slides.length > 0) {
+                setTimeout(() => {
+                    showNewsModal();
+                }, 500); // Show after 500ms delay
 
-            // Add keyboard navigation
-            document.addEventListener('keydown', function(e) {
-                const modal = document.getElementById('newsModal');
-                if (!modal.classList.contains('invisible')) {
-                    if (e.key === 'ArrowLeft') {
-                        prevSlide();
-                    } else if (e.key === 'ArrowRight') {
-                        nextSlide();
-                    } else if (e.key === 'Escape') {
-                        closeNewsModal();
+                // Initialize first slide
+                goToSlide(0);
+
+                // Add keyboard navigation (arrows only, no Escape key)
+                document.addEventListener('keydown', function(e) {
+                    const modal = document.getElementById('newsModal');
+                    if (!modal.classList.contains('invisible')) {
+                        if (e.key === 'ArrowLeft') {
+                            prevSlide();
+                        } else if (e.key === 'ArrowRight') {
+                            nextSlide();
+                        }
+                        // Removed Escape key functionality - must use close button
                     }
-                }
-            });
+                });
 
-            // Close modal when clicking outside
-            document.getElementById('newsModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeNewsModal();
-                }
-            });
+                // Removed click outside to close - must use close button
+            }
         });
     </script>
 </div>

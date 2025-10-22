@@ -16,6 +16,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('workers/{worker}', [\App\Http\Controllers\Admin\WorkerController::class, 'show'])->name('workers.show');
     Route::get('salary', \App\Livewire\Admin\Salary::class)->name('salary');
     Route::get('report', \App\Livewire\Admin\Report::class)->name('report');
+    Route::get('news', \App\Livewire\Admin\NewsManagement::class)->name('news');
 });
 
 // Client/Contractor Routes
@@ -25,8 +26,7 @@ Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('
     Route::get('workers/{worker}', [\App\Http\Controllers\Client\WorkersController::class, 'show'])->name('workers.show');
     Route::get('timesheet', \App\Livewire\Client\Timesheet::class)->name('timesheet');
     Route::get('timesheet/{id}', [\App\Http\Controllers\Client\TimesheetController::class, 'show'])->name('timesheet.show');
-    Route::get('timesheet/{id}/edit', [\App\Http\Controllers\Client\TimesheetController::class, 'edit'])->name('timesheet.edit');
-    Route::post('timesheet/{id}/submit', [\App\Http\Controllers\Client\TimesheetController::class, 'submitDraft'])->name('timesheet.submit');
+    Route::get('timesheet/{id}/edit', \App\Livewire\Client\TimesheetEdit::class)->name('timesheet.edit');
 
     // Payment routes
     Route::post('payment/{submission}', [\App\Http\Controllers\Client\PaymentController::class, 'createPayment'])->name('payment.create');

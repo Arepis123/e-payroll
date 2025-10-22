@@ -1,4 +1,78 @@
 <x-layouts.app :title="__('Dashboard')">
+    <!-- Carousel News Notification Modal -->
+    <div id="newsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] opacity-0 invisible transition-all duration-300">
+        <div class="relative w-full max-w-2xl mx-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300">
+            <!-- Close Button -->
+            <button onclick="closeNewsModal()" class="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/90 dark:bg-zinc-800/90 hover:bg-white dark:hover:bg-zinc-800 transition-colors">
+                <flux:icon.x-mark class="size-5 text-zinc-600 dark:text-zinc-400" />
+            </button>
+
+            @if(isset($newsItems) && $newsItems->count() > 0)
+            <!-- Carousel Navigation - Top -->
+            <div class="absolute top-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm px-4 py-2 rounded-full z-10">
+                <button onclick="prevSlide()" class="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                    <flux:icon.chevron-left class="size-4 text-zinc-600 dark:text-zinc-400" />
+                </button>
+
+                <div class="flex gap-2">
+                    @foreach($newsItems as $index => $item)
+                    <button onclick="goToSlide({{ $index }})" class="carousel-dot w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 transition-all"></button>
+                    @endforeach
+                </div>
+
+                <button onclick="nextSlide()" class="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                    <flux:icon.chevron-right class="size-4 text-zinc-600 dark:text-zinc-400" />
+                </button>
+            </div>
+
+            <!-- Carousel Container -->
+            <div id="carouselContainer" class="relative pt-14">
+                @foreach($newsItems as $index => $news)
+                    <!-- News Slide with Image -->
+                    <div class="carousel-slide {{ $index === 0 ? 'active' : '' }}">
+                        <div class="flex flex-col">
+                            @if($news->image_path)
+                            <div class="w-full relative group">
+                                <img
+                                    src="{{ asset('storage/' . $news->image_path) }}"
+                                    alt="{{ $news->title }}"
+                                    class="w-full h-auto object-cover max-h-96 cursor-pointer transition-opacity hover:opacity-90"
+                                    onclick="const win = window.open('{{ asset('storage/' . $news->image_path) }}', '_blank'); if(win) win.opener = null;"
+                                    title="Click to view full image in new tab"
+                                />
+                                <!-- Zoom hint overlay - centered -->
+                                <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    <div class="bg-white/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 px-4 py-2 rounded-lg flex items-center gap-2">
+                                        <flux:icon.magnifying-glass-plus class="size-5" />
+                                        <span class="font-medium">Click to view full image</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
+                            <div class="p-6 bg-white dark:bg-zinc-900">
+                                <h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{{ $news->title }}</h2>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                                    {!! nl2br(e($news->description)) !!}
+                                </p>
+                                @if($news->button_text && $news->button_url)
+                                    <flux:button variant="primary" href="{{ $news->button_url }}" wire:navigate onclick="closeNewsModal()">
+                                        {{ $news->button_text }}
+                                    </flux:button>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            @endif
+
+            <!-- Progress Bar -->
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-zinc-200 dark:bg-zinc-700">
+                <div id="progressBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 33.33%"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="flex h-full w-full flex-1 flex-col gap-6">
         <!-- Page Header -->
         <div class="flex items-center justify-between">
@@ -295,4 +369,131 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Carousel News Modal
+        let currentSlide = 0;
+        let autoSlideInterval;
+
+        function showNewsModal() {
+            const modal = document.getElementById('newsModal');
+            if (modal) {
+                modal.classList.remove('opacity-0', 'invisible');
+                modal.querySelector('.transform').classList.remove('scale-95');
+                modal.querySelector('.transform').classList.add('scale-100');
+
+                // Start auto-sliding
+                startAutoSlide();
+            }
+        }
+
+        function closeNewsModal() {
+            const modal = document.getElementById('newsModal');
+            if (modal) {
+                modal.classList.add('opacity-0', 'invisible');
+                modal.querySelector('.transform').classList.remove('scale-100');
+                modal.querySelector('.transform').classList.add('scale-95');
+
+                // Stop auto-sliding
+                stopAutoSlide();
+            }
+        }
+
+        function goToSlide(index) {
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dots = document.querySelectorAll('.carousel-dot');
+            const progressBar = document.getElementById('progressBar');
+
+            if (slides.length === 0) return;
+
+            // Hide all slides
+            slides.forEach(slide => {
+                slide.classList.remove('active');
+                slide.style.display = 'none';
+            });
+
+            // Show current slide
+            slides[index].style.display = 'block';
+            setTimeout(() => {
+                slides[index].classList.add('active');
+            }, 10);
+
+            // Update dots
+            dots.forEach((dot, i) => {
+                if (i === index) {
+                    dot.classList.add('bg-blue-600', 'dark:bg-blue-500', 'w-6');
+                    dot.classList.remove('bg-zinc-400', 'dark:bg-zinc-600', 'w-2');
+                } else {
+                    dot.classList.remove('bg-blue-600', 'dark:bg-blue-500', 'w-6');
+                    dot.classList.add('bg-zinc-400', 'dark:bg-zinc-600', 'w-2');
+                }
+            });
+
+            // Update progress bar
+            const progress = ((index + 1) / slides.length) * 100;
+            progressBar.style.width = progress + '%';
+
+            currentSlide = index;
+
+            // Reset auto-slide timer
+            stopAutoSlide();
+            startAutoSlide();
+        }
+
+        function nextSlide() {
+            const slides = document.querySelectorAll('.carousel-slide');
+            if (slides.length === 0) return;
+            const nextIndex = (currentSlide + 1) % slides.length;
+            goToSlide(nextIndex);
+        }
+
+        function prevSlide() {
+            const slides = document.querySelectorAll('.carousel-slide');
+            if (slides.length === 0) return;
+            const prevIndex = (currentSlide - 1 + slides.length) % slides.length;
+            goToSlide(prevIndex);
+        }
+
+        function startAutoSlide() {
+            autoSlideInterval = setInterval(() => {
+                nextSlide();
+            }, 5000); // Change slide every 5 seconds
+        }
+
+        function stopAutoSlide() {
+            if (autoSlideInterval) {
+                clearInterval(autoSlideInterval);
+            }
+        }
+
+        // Show modal on page load if there are news items
+        document.addEventListener('DOMContentLoaded', function() {
+            const slides = document.querySelectorAll('.carousel-slide');
+
+            // Only show modal if there are news items
+            if (slides.length > 0) {
+                setTimeout(() => {
+                    showNewsModal();
+                }, 500); // Show after 500ms delay
+
+                // Initialize first slide
+                goToSlide(0);
+
+                // Add keyboard navigation (arrows only, no Escape key)
+                document.addEventListener('keydown', function(e) {
+                    const modal = document.getElementById('newsModal');
+                    if (!modal.classList.contains('invisible')) {
+                        if (e.key === 'ArrowLeft') {
+                            prevSlide();
+                        } else if (e.key === 'ArrowRight') {
+                            nextSlide();
+                        }
+                        // Removed Escape key functionality - must use close button
+                    }
+                });
+
+                // Removed click outside to close - must use close button
+            }
+        });
+    </script>
 </x-layouts.app>

@@ -167,7 +167,7 @@
                                 <p class="text-sm text-zinc-600 dark:text-zinc-400">Current Employer</p>
                                 <p class="text-base font-medium text-zinc-900 dark:text-zinc-100">
                                     @if($worker->contractor)
-                                        {{ $worker->contractor->ctr_name }}
+                                        {{ $worker->contractor->ctr_comp_name }}
                                     @else
                                         -
                                     @endif
@@ -224,6 +224,97 @@
                         </div>
                     </div>
                 </flux:card>
+
+                <!-- Employment History -->
+                @if($contractHistory && $contractHistory->count() > 0)
+                    <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
+                        <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Employment History</h2>
+                        <div class="space-y-4">
+                            @foreach($contractHistory as $index => $pastContract)
+                                @php
+                                    $isCurrentContract = $contract && $contract->con_id === $pastContract->con_id;
+                                    $contractContractor = $pastContract->contractor;
+                                @endphp
+                                <div class="relative pl-6 pb-4 {{ $index < $contractHistory->count() - 1 ? 'border-l-2 border-zinc-200 dark:border-zinc-700' : '' }}">
+                                    <!-- Timeline dot -->
+                                    <div class="absolute left-0 top-0 -translate-x-1/2">
+                                        @if($isCurrentContract)
+                                            <div class="size-4 rounded-full bg-green-500 border-2 border-white dark:border-zinc-900"></div>
+                                        @else
+                                            <div class="size-4 rounded-full bg-zinc-300 dark:bg-zinc-600 border-2 border-white dark:border-zinc-900"></div>
+                                        @endif
+                                    </div>
+
+                                    <div class="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4">
+                                        <div class="flex items-start justify-between mb-2">
+                                            <div class="flex-1">
+                                                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">
+                                                    {{ $contractContractor ? $contractContractor->ctr_comp_name : 'Unknown Contractor' }}
+                                                </h3>
+                                                <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                                                    {{ $contractContractor ? $contractContractor->ctr_clab_no : 'N/A' }}
+                                                </p>
+                                            </div>
+                                            @if($isCurrentContract)
+                                                <flux:badge color="green">Current</flux:badge>
+                                            @elseif($pastContract->isActive())
+                                                <flux:badge color="blue">Active</flux:badge>
+                                            @else
+                                                <flux:badge color="zinc">Expired</flux:badge>
+                                            @endif
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-3 mt-3 text-sm">
+                                            <div>
+                                                <p class="text-xs text-zinc-600 dark:text-zinc-400">Start Date</p>
+                                                <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                                                    {{ $pastContract->con_start->format('d M Y') }}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-zinc-600 dark:text-zinc-400">End Date</p>
+                                                <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                                                    {{ $pastContract->con_end->format('d M Y') }}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-zinc-600 dark:text-zinc-400">Duration</p>
+                                                <p class="font-medium text-zinc-900 dark:text-zinc-100">
+                                                    {{ $pastContract->con_period }} months
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-zinc-600 dark:text-zinc-400">Status</p>
+                                                <p class="font-medium {{ $pastContract->isActive() ? 'text-green-600 dark:text-green-400' : 'text-zinc-600 dark:text-zinc-400' }}">
+                                                    {{ $pastContract->isActive() ? 'Active' : 'Expired' }}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        @if(!$pastContract->isActive() && !$isCurrentContract)
+                                            <div class="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                                                <p class="text-xs text-zinc-500 dark:text-zinc-500">
+                                                    Contract ended {{ $pastContract->con_end->diffForHumans() }}
+                                                </p>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        @if($contractHistory->count() === 1)
+                            <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                <div class="flex gap-2">
+                                    <flux:icon.information-circle class="size-4 flex-shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
+                                    <p class="text-xs text-blue-700 dark:text-blue-300">
+                                        This is the first employment contract for this worker.
+                                    </p>
+                                </div>
+                            </div>
+                        @endif
+                    </flux:card>
+                @endif                
             </div>
 
             <!-- Sidebar (Right - 1 column) -->

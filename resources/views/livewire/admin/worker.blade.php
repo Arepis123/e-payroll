@@ -122,7 +122,7 @@
                     <flux:table.column sortable :sorted="$sortBy === 'passport'" :direction="$sortDirection" wire:click="sortByColumn('passport')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Passport Number</span></flux:table.column>
                     <flux:table.column sortable :sorted="$sortBy === 'position'" :direction="$sortDirection" wire:click="sortByColumn('position')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Position</span></flux:table.column>
                     <flux:table.column sortable :sorted="$sortBy === 'country'" :direction="$sortDirection" wire:click="sortByColumn('country')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Country</span></flux:table.column>
-                    <flux:table.column sortable :sorted="$sortBy === 'client'" :direction="$sortDirection" wire:click="sortByColumn('client')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Current Client</span></flux:table.column>
+                    <flux:table.column sortable :sorted="$sortBy === 'client'" :direction="$sortDirection" wire:click="sortByColumn('client')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400 max-md:hidden">Current Client</span></flux:table.column>
                     <flux:table.column sortable :sorted="$sortBy === 'passport_expiry'" :direction="$sortDirection" wire:click="sortByColumn('passport_expiry')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Passport Expiry</span></flux:table.column>
                     <flux:table.column sortable :sorted="$sortBy === 'permit_expiry'" :direction="$sortDirection" wire:click="sortByColumn('permit_expiry')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Permit Expiry</span></flux:table.column>
                     <flux:table.column sortable :sorted="$sortBy === 'status'" :direction="$sortDirection" wire:click="sortByColumn('status')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</span></flux:table.column>
@@ -170,7 +170,7 @@
 
                             <flux:table.cell variant="strong">{{ $worker['country'] }}</flux:table.cell>
 
-                            <flux:table.cell variant="strong">{{ $worker['client'] }}</flux:table.cell>
+                            <flux:table.cell variant="strong" class="max-w-xs truncate">{{ $worker['client'] }}</flux:table.cell>
 
                             <flux:table.cell variant="strong">
                                 <span class="{{ $passportClass }}">
@@ -221,7 +221,7 @@
                     <p class="text-sm text-zinc-600 dark:text-zinc-400">
                         Showing {{ $pagination['from'] }} to {{ $pagination['to'] }} of {{ $pagination['total'] }} results
                     </p>
-                    <div class="flex gap-2">
+                    <div class="flex items-center gap-2">
                         @if($pagination['current_page'] > 1)
                             <flux:button variant="ghost" size="sm" wire:click="$set('page', {{ $pagination['current_page'] - 1 }})">Previous</flux:button>
                         @else
@@ -230,9 +230,9 @@
 
                         @for($i = 1; $i <= $pagination['last_page']; $i++)
                             @if($i == $pagination['current_page'])
-                                <flux:button variant="primary" size="sm">{{ $i }}</flux:button>
+                                <flux:button variant="primary" size="xs">{{ $i }}</flux:button>
                             @else
-                                <flux:button variant="ghost" size="sm" wire:click="$set('page', {{ $i }})">{{ $i }}</flux:button>
+                                <flux:button variant="ghost" size="xs" wire:click="$set('page', {{ $i }})">{{ $i }}</flux:button>
                             @endif
                         @endfor
 

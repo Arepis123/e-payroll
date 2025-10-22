@@ -90,7 +90,21 @@ class PayrollService
             // Get previous month's OT for this worker (default to 0)
             $previousMonthOt = $previousMonthOtMap[$workerData['worker_id']] ?? 0;
 
-            // Calculate salary with previous month's OT included in payment
+            // Save worker first (without final calculations)
+            $payrollWorker->save();
+
+            // Save transactions BEFORE calculating salary
+            if (isset($workerData['transactions']) && is_array($workerData['transactions'])) {
+                foreach ($workerData['transactions'] as $transaction) {
+                    $payrollWorker->transactions()->create([
+                        'type' => $transaction['type'],
+                        'amount' => $transaction['amount'],
+                        'remarks' => $transaction['remarks'],
+                    ]);
+                }
+            }
+
+            // NOW calculate salary with transactions in database
             $payrollWorker->calculateSalary($previousMonthOt);
             $payrollWorker->save();
 
@@ -167,7 +181,21 @@ class PayrollService
             // Get previous month's OT for this worker (default to 0)
             $previousMonthOt = $previousMonthOtMap[$workerData['worker_id']] ?? 0;
 
-            // Calculate salary with previous month's OT included in payment
+            // Save worker first (without final calculations)
+            $payrollWorker->save();
+
+            // Save transactions BEFORE calculating salary
+            if (isset($workerData['transactions']) && is_array($workerData['transactions'])) {
+                foreach ($workerData['transactions'] as $transaction) {
+                    $payrollWorker->transactions()->create([
+                        'type' => $transaction['type'],
+                        'amount' => $transaction['amount'],
+                        'remarks' => $transaction['remarks'],
+                    ]);
+                }
+            }
+
+            // NOW calculate salary with transactions in database
             $payrollWorker->calculateSalary($previousMonthOt);
             $payrollWorker->save();
 

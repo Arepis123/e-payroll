@@ -23,6 +23,10 @@ class PayrollWorker extends Model
         'ot_public_pay',
         'total_ot_pay',
         'gross_salary',
+        'advance_payment',
+        'advance_payment_remarks',
+        'deduction',
+        'deduction_remarks',
         'epf_employee',
         'socso_employee',
         'total_deductions',
@@ -45,6 +49,8 @@ class PayrollWorker extends Model
         'ot_public_pay' => 'decimal:2',
         'total_ot_pay' => 'decimal:2',
         'gross_salary' => 'decimal:2',
+        'advance_payment' => 'decimal:2',
+        'deduction' => 'decimal:2',
         'epf_employee' => 'decimal:2',
         'socso_employee' => 'decimal:2',
         'total_deductions' => 'decimal:2',
@@ -77,6 +83,34 @@ class PayrollWorker extends Model
     public function worker()
     {
         return $this->belongsTo(Worker::class, 'worker_id', 'wkr_id');
+    }
+
+    /**
+     * Get all transactions for this payroll worker
+     */
+    public function transactions()
+    {
+        return $this->hasMany(PayrollWorkerTransaction::class);
+    }
+
+    /**
+     * Get total advance payment from all transactions
+     */
+    public function getTotalAdvancePaymentAttribute(): float
+    {
+        return $this->transactions()
+            ->where('type', 'advance_payment')
+            ->sum('amount') ?? 0;
+    }
+
+    /**
+     * Get total deductions from all transactions
+     */
+    public function getTotalDeductionAttribute(): float
+    {
+        return $this->transactions()
+            ->where('type', 'deduction')
+            ->sum('amount') ?? 0;
     }
 
     /**
@@ -114,8 +148,13 @@ class PayrollWorker extends Model
         // Regular pay is the basic salary
         $this->regular_pay = $this->basic_salary;
 
-        // Gross salary = Basic + PREVIOUS month's OT (NOT current month)
-        $this->gross_salary = $this->basic_salary + $previousMonthOtPay;
+        // Gross salary = Basic + PREVIOUS month's OT + Advance Payment - Deduction
+        // Formula from CSV: Jumlah Gaji = Basic + Advance Payment - Deduction
+        // Use transaction totals if available, otherwise use direct fields
+        $totalAdvancePayment = $this->exists ? $this->total_advance_payment : ($this->advance_payment ?? 0);
+        $totalDeduction = $this->exists ? $this->total_deduction : ($this->deduction ?? 0);
+
+        $this->gross_salary = $this->basic_salary + $previousMonthOtPay + $totalAdvancePayment - $totalDeduction;
 
         // Employee deductions (calculated on gross salary including previous month OT)
         $this->epf_employee = $calculator->calculateWorkerEPF($this->gross_salary);
@@ -154,7 +193,9 @@ class PayrollWorker extends Model
             $this->basic_salary,
             $this->ot_normal_hours,
             $this->ot_rest_hours,
-            $this->ot_public_hours
+            $this->ot_public_hours,
+            $this->advance_payment ?? 0,
+            $this->deduction ?? 0
         );
     }
 }

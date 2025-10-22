@@ -247,7 +247,9 @@
                 @empty
                     <flux:table.rows>
                         <flux:table.cell variant="strong" colspan="9" class="text-center">
-                            No payment records found for {{ $year }}.
+                            <div class="py-5">
+                                No payment records found for {{ $year }}.
+                            </div>
                         </flux:table.cell>
                     </flux:table.rows>
                 @endforelse

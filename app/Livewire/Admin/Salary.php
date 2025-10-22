@@ -5,25 +5,93 @@ namespace App\Livewire\Admin;
 use App\Models\PayrollSubmission;
 use App\Models\PayrollPayment;
 use Livewire\Component;
+use Livewire\Attributes\Url;
 
 class Salary extends Component
 {
+
     public $stats = [];
-    public $recentSubmissions = [];
-    public $submissionType = 'single';
-    public $selectedClient = '';
-    public $selectedWorker = '';
-    public $payPeriod = '';
-    public $basicSalary = 3500.00;
-    public $hoursWorked = 176;
-    public $overtimeHours = 8;
-    public $allowances = 200.00;
-    public $deductions = 0.00;
+
+    #[Url]
+    public $contractorFilter = '';
+
+    #[Url]
+    public $statusFilter = '';
+
+    #[Url]
+    public $paymentStatusFilter = '';
+
+    #[Url]
+    public $search = '';
+
+    #[Url]
+    public $page = 1;
+
+    public $contractors = [];
+    public $perPage = 10;
+    public $showFilters = true;
+    public $sortBy = 'created_at';
+    public $sortDirection = 'desc';
 
     public function mount()
     {
         $this->loadStats();
-        $this->loadRecentSubmissions();
+        $this->loadContractors();
+    }
+
+    public function toggleFilters()
+    {
+        $this->showFilters = !$this->showFilters;
+    }
+
+    public function sortByColumn($column)
+    {
+        if ($this->sortBy === $column) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortBy = $column;
+            $this->sortDirection = 'asc';
+        }
+    }
+
+    public function export()
+    {
+        // TODO: Implement export functionality
+        session()->flash('success', 'Export functionality coming soon!');
+    }
+
+    public function resetPage()
+    {
+        $this->page = 1;
+    }
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingContractorFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPaymentStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function clearFilters()
+    {
+        $this->contractorFilter = '';
+        $this->statusFilter = '';
+        $this->paymentStatusFilter = '';
+        $this->search = '';
+        $this->resetPage();
     }
 
     protected function loadStats()
@@ -61,66 +129,91 @@ class Salary extends Component
         ];
     }
 
-    protected function loadRecentSubmissions()
+    protected function loadContractors()
     {
-        $submissions = PayrollSubmission::with(['user', 'payment'])
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
-
-        $this->recentSubmissions = $submissions->map(function ($submission) {
-            $clientName = $submission->user
-                ? $submission->user->name
-                : 'Client ' . $submission->contractor_clab_no;
-
-            $monthName = date('M', mktime(0, 0, 0, $submission->month, 1));
-            $period = $monthName . ' ' . $submission->year;
-
-            $status = match($submission->status) {
-                'paid' => 'Completed',
-                'pending_payment' => 'Pending',
-                'overdue' => 'Pending',
-                default => 'Draft',
-            };
-
-            $paymentStatus = $submission->payment && $submission->payment->status === 'completed'
-                ? 'Paid'
-                : 'Awaiting';
-
-            return [
-                'id' => 'PAY' . str_pad($submission->id, 6, '0', STR_PAD_LEFT),
-                'client' => $clientName,
-                'workers' => $submission->total_workers,
-                'period' => $period,
-                'amount' => $submission->total_amount,
-                'status' => $status,
-                'payment_status' => $paymentStatus,
-            ];
-        })->toArray();
+        // Get unique contractors from submissions
+        $this->contractors = PayrollSubmission::with('user')
+            ->get()
+            ->pluck('user')
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->pluck('name', 'contractor_clab_no')
+            ->toArray();
     }
 
-    public function calculateTotal()
+    protected function getSubmissions()
     {
-        $overtimeAmount = $this->overtimeHours * 25; // RM 25 per hour
-        return $this->basicSalary + $overtimeAmount + $this->allowances - $this->deductions;
-    }
+        $query = PayrollSubmission::with(['user', 'payment']);
 
-    public function saveDraft()
-    {
-        // TODO: Implement save draft logic
-        session()->flash('success', 'Draft saved successfully!');
-    }
+        // Apply search filter
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('id', 'like', '%' . $this->search . '%')
+                  ->orWhereHas('user', function ($userQuery) {
+                      $userQuery->where('name', 'like', '%' . $this->search . '%');
+                  });
+            });
+        }
 
-    public function proceedToPayment()
-    {
-        // TODO: Implement payment logic
-        session()->flash('success', 'Proceeding to payment...');
+        // Apply contractor filter
+        if ($this->contractorFilter) {
+            $query->where('contractor_clab_no', $this->contractorFilter);
+        }
+
+        // Apply status filter
+        if ($this->statusFilter) {
+            if ($this->statusFilter === 'completed') {
+                $query->where('status', 'paid');
+            } elseif ($this->statusFilter === 'pending') {
+                $query->whereIn('status', ['pending_payment', 'overdue']);
+            } elseif ($this->statusFilter === 'draft') {
+                $query->where('status', 'draft');
+            }
+        }
+
+        // Apply payment status filter
+        if ($this->paymentStatusFilter) {
+            if ($this->paymentStatusFilter === 'paid') {
+                $query->whereHas('payment', function ($paymentQuery) {
+                    $paymentQuery->where('status', 'completed');
+                });
+            } elseif ($this->paymentStatusFilter === 'awaiting') {
+                $query->where(function ($q) {
+                    $q->whereDoesntHave('payment')
+                      ->orWhereHas('payment', function ($paymentQuery) {
+                          $paymentQuery->where('status', '!=', 'completed');
+                      });
+                });
+            }
+        }
+
+        // Apply sorting
+        $query->orderBy($this->sortBy, $this->sortDirection);
+
+        return $query->get();
     }
 
     public function render()
     {
+        $allSubmissions = $this->getSubmissions();
+
+        // Manual pagination
+        $total = $allSubmissions->count();
+        $submissions = $allSubmissions->slice(($this->page - 1) * $this->perPage, $this->perPage)->values();
+
+        $pagination = [
+            'current_page' => $this->page,
+            'per_page' => $this->perPage,
+            'total' => $total,
+            'last_page' => ceil($total / $this->perPage),
+            'from' => (($this->page - 1) * $this->perPage) + 1,
+            'to' => min($this->page * $this->perPage, $total),
+        ];
+
         return view('livewire.admin.salary', [
-            'totalPayment' => $this->calculateTotal(),
+            'submissions' => $submissions,
+            'pagination' => $pagination,
         ]);
     }
 }

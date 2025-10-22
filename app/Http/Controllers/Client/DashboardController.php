@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\PayrollSubmission;
+use App\Models\News;
 use App\Services\ContractWorkerService;
 use Illuminate\Http\Request;
 
@@ -140,13 +141,17 @@ class DashboardController extends Controller
             ->take(3)
             ->get();
 
+        // Get active news items for carousel
+        $newsItems = News::active()->get();
+
         return view('client.dashboard', compact(
             'workers',
             'recentWorkers',
             'stats',
             'expiringContracts',
             'paymentStats',
-            'recentPayments'
+            'recentPayments',
+            'newsItems'
         ));
     }
 }

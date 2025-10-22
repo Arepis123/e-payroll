@@ -3,23 +3,20 @@
 namespace App\Livewire\Client;
 
 use App\Models\PayrollSubmission;
-use App\Models\PayrollWorker;
 use App\Services\PayrollService;
 use App\Services\ContractWorkerService;
 use Livewire\Component;
-use Livewire\Attributes\Reactive;
 
-class Timesheet extends Component
+class TimesheetEdit extends Component
 {
     protected PayrollService $payrollService;
     protected ContractWorkerService $contractWorkerService;
 
+    public $submissionId;
     public $workers = [];
     public $selectedWorkers = [];
     public $period;
     public $currentSubmission;
-    public $stats;
-    public $recentSubmissions;
     public $successMessage = '';
     public $errorMessage = '';
 
@@ -37,8 +34,9 @@ class Timesheet extends Component
         $this->contractWorkerService = $contractWorkerService;
     }
 
-    public function mount()
+    public function mount($id)
     {
+        $this->submissionId = $id;
         $this->loadData();
     }
 
@@ -51,86 +49,42 @@ class Timesheet extends Component
             return;
         }
 
+        // Load the draft submission with transactions
+        $submission = PayrollSubmission::with('workers.transactions')
+            ->where('id', $this->submissionId)
+            ->where('contractor_clab_no', $clabNo)
+            ->where('status', 'draft')
+            ->firstOrFail();
+
+        $this->currentSubmission = $submission;
+
         // Get current payroll period info
         $this->period = $this->payrollService->getCurrentPayrollPeriod();
 
-        // Get active contracted workers only
-        $activeWorkers = $this->contractWorkerService->getActiveContractedWorkers($clabNo);
-
-        // Get ALL submissions for this month to find all submitted workers
-        $currentMonth = now()->month;
-        $currentYear = now()->year;
-
-        $allSubmissionsThisMonth = PayrollSubmission::where('contractor_clab_no', $clabNo)
-            ->where('month', $currentMonth)
-            ->where('year', $currentYear)
-            ->with('workers')
-            ->get();
-
-        // Get IDs of workers already submitted
-        $submittedWorkerIds = $allSubmissionsThisMonth->flatMap(function($submission) {
-            return $submission->workers->pluck('worker_id');
-        })->unique()->toArray();
-
-        // Filter out workers who have already been submitted
-        $remainingWorkers = $activeWorkers->filter(function($worker) use ($submittedWorkerIds) {
-            return !in_array($worker->wkr_id, $submittedWorkerIds);
-        });
-
-        // Determine current submission status
-        $currentStatus = 'draft';
-        if ($allSubmissionsThisMonth->count() > 0) {
-            $hasDraft = $allSubmissionsThisMonth->contains('status', 'draft');
-            if ($hasDraft) {
-                $currentStatus = 'draft';
-            } else {
-                $statuses = $allSubmissionsThisMonth->pluck('status')->unique();
-                if ($statuses->contains('overdue')) {
-                    $currentStatus = 'overdue';
-                } elseif ($statuses->contains('pending_payment')) {
-                    $currentStatus = 'pending_payment';
-                } elseif ($statuses->contains('paid')) {
-                    $currentStatus = 'paid';
-                }
-            }
-        }
-
-        $this->currentSubmission = (object)[
-            'month' => $currentMonth,
-            'year' => $currentYear,
-            'status' => $currentStatus,
-            'workers' => collect([]),
-        ];
-
-        // Prepare workers data
-        $this->workers = $remainingWorkers->map(function($worker, $index) {
+        // Prepare workers data with transactions
+        $this->workers = $submission->workers->map(function($draftWorker, $index) {
             return [
                 'index' => $index,
-                'worker_id' => $worker->wkr_id,
-                'worker_name' => $worker->name,
-                'worker_passport' => $worker->ic_number,
-                'basic_salary' => $worker->basic_salary ?? 1700,
-                'ot_normal_hours' => 0,
-                'ot_rest_hours' => 0,
-                'ot_public_hours' => 0,
-                'advance_payment' => 0,
-                'deduction' => 0,
-                'transactions' => [], // Store multiple transactions
+                'worker_id' => $draftWorker->worker_id,
+                'worker_name' => $draftWorker->worker_name,
+                'worker_passport' => $draftWorker->worker_passport,
+                'basic_salary' => $draftWorker->basic_salary,
+                'ot_normal_hours' => $draftWorker->ot_normal_hours,
+                'ot_rest_hours' => $draftWorker->ot_rest_hours,
+                'ot_public_hours' => $draftWorker->ot_public_hours,
+                'transactions' => $draftWorker->transactions->map(function($txn) {
+                    return [
+                        'type' => $txn->type,
+                        'amount' => $txn->amount,
+                        'remarks' => $txn->remarks
+                    ];
+                })->toArray(),
                 'included' => true,
             ];
         })->values()->toArray();
 
         // Initialize selected workers (all selected by default)
         $this->selectedWorkers = collect($this->workers)->pluck('worker_id')->toArray();
-
-        // Update penalties
-        $this->payrollService->updateOverduePenalties($clabNo);
-
-        // Get recent submissions
-        $this->recentSubmissions = $this->payrollService->getContractorSubmissions($clabNo)->take(5);
-
-        // Get statistics
-        $this->stats = $this->payrollService->getContractorStatistics($clabNo, $remainingWorkers->count());
     }
 
     public function toggleWorker($workerId)
@@ -187,7 +141,7 @@ class Timesheet extends Component
             'remarks' => $validated['newTransactionRemarks'],
         ];
 
-        // CRITICAL: Update the worker's transactions array directly
+        // Update the worker's transactions array directly
         if ($this->currentWorkerIndex !== null) {
             $currentTransactions = $this->workers[$this->currentWorkerIndex]['transactions'] ?? [];
             $currentTransactions[] = $newTransaction;
@@ -200,14 +154,6 @@ class Timesheet extends Component
             // Also update the modal's local transactions array
             $this->transactions = $currentTransactions;
         }
-
-        // Log for debugging
-        \Log::info('Transaction added', [
-            'new_transaction' => $newTransaction,
-            'worker_transactions' => $this->workers[$this->currentWorkerIndex]['transactions'] ?? [],
-            'modal_transactions' => $this->transactions,
-            'count' => count($this->transactions),
-        ]);
 
         // Reset the form
         $this->resetNewTransaction();
@@ -251,22 +197,13 @@ class Timesheet extends Component
             ->where('type', 'deduction')
             ->sum('amount');
 
-        // Update worker totals
-        $this->workers[$this->currentWorkerIndex]['advance_payment'] = $totalAdvancePayment;
-        $this->workers[$this->currentWorkerIndex]['deduction'] = $totalDeduction;
-
         // Close modal
         $this->closeTransactionModal();
         $this->successMessage = "Transactions saved successfully for {$workerName}. Total: Advance RM " . number_format($totalAdvancePayment, 2) . ", Deduction RM " . number_format($totalDeduction, 2);
     }
 
-    public function saveDraft()
+    public function updateDraft()
     {
-        \Log::info('saveDraft called', [
-            'workers_count' => count($this->workers),
-            'selected_workers' => $this->selectedWorkers,
-            'workers_data' => $this->workers,
-        ]);
         return $this->saveSubmission('draft');
     }
 
@@ -275,46 +212,12 @@ class Timesheet extends Component
         return $this->saveSubmission('submit');
     }
 
-    public function submitDraftForPayment($submissionId)
-    {
-        $clabNo = auth()->user()->contractor_clab_no;
-
-        if (!$clabNo) {
-            $this->errorMessage = 'No contractor CLAB number assigned.';
-            return;
-        }
-
-        try {
-            // Find the draft submission
-            $submission = PayrollSubmission::where('id', $submissionId)
-                ->where('contractor_clab_no', $clabNo)
-                ->where('status', 'draft')
-                ->firstOrFail();
-
-            // Update status to pending_payment
-            $submission->update([
-                'status' => 'pending_payment',
-                'submitted_at' => now(),
-            ]);
-
-            $this->successMessage = "Draft submitted successfully for {$submission->month_year}. Total amount: RM " . number_format($submission->total_amount, 2);
-
-            // Reload data
-            $this->loadData();
-        } catch (\Exception $e) {
-            $this->errorMessage = 'Failed to submit draft: ' . $e->getMessage();
-        }
-    }
-
     private function saveSubmission($action)
     {
-        \Log::info('saveSubmission called', ['action' => $action]);
-
         $clabNo = auth()->user()->contractor_clab_no;
 
         if (!$clabNo) {
             $this->errorMessage = 'No contractor CLAB number assigned.';
-            \Log::error('No CLAB number');
             return;
         }
 
@@ -330,7 +233,6 @@ class Timesheet extends Component
                 'workers.*.ot_public_hours' => 'nullable|numeric|min:0',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Validation failed', ['error' => $e->getMessage()]);
             $this->errorMessage = 'Validation failed: ' . $e->getMessage();
             return;
         }
@@ -340,39 +242,94 @@ class Timesheet extends Component
             return in_array($worker['worker_id'], $this->selectedWorkers);
         })->toArray();
 
-        \Log::info('Selected workers', ['count' => count($selectedWorkersData), 'data' => $selectedWorkersData]);
-
         if (empty($selectedWorkersData)) {
             $this->errorMessage = 'Please select at least one worker to submit payroll.';
-            \Log::error('No workers selected');
             return;
         }
 
         try {
-            if ($action === 'draft') {
-                \Log::info('Calling savePayrollDraft');
-                $submission = $this->payrollService->savePayrollDraft($clabNo, $selectedWorkersData);
-                $workerCount = count($selectedWorkersData);
-                $this->successMessage = "Draft saved successfully. {$workerCount} worker(s) included.";
-                \Log::info('Draft saved', ['submission_id' => $submission->id]);
-            } else {
-                \Log::info('Calling savePayrollSubmission');
-                $submission = $this->payrollService->savePayrollSubmission($clabNo, $selectedWorkersData);
-                $workerCount = count($selectedWorkersData);
-                $this->successMessage = "Timesheet submitted successfully for {$submission->month_year}. {$workerCount} worker(s) included. Total amount: RM " . number_format($submission->total_amount, 2);
-                \Log::info('Submission saved', ['submission_id' => $submission->id]);
+            // Update existing draft
+            $submission = PayrollSubmission::where('id', $this->submissionId)
+                ->where('contractor_clab_no', $clabNo)
+                ->where('status', 'draft')
+                ->firstOrFail();
+
+            // Delete existing workers and transactions
+            foreach ($submission->workers as $worker) {
+                $worker->transactions()->delete();
+            }
+            $submission->workers()->delete();
+
+            // Recalculate with new worker data
+            $totalAmount = 0;
+            $previousMonth = now()->month - 1;
+            $previousYear = now()->year;
+            if ($previousMonth < 1) {
+                $previousMonth = 12;
+                $previousYear--;
+            }
+            $previousSubmission = $this->payrollService->getSubmissionForMonth($clabNo, $previousMonth, $previousYear);
+            $previousMonthOtMap = [];
+            if ($previousSubmission) {
+                foreach ($previousSubmission->workers as $prevWorker) {
+                    $previousMonthOtMap[$prevWorker->worker_id] = $prevWorker->total_ot_pay;
+                }
             }
 
-            // Reload data
-            $this->loadData();
+            foreach ($selectedWorkersData as $workerData) {
+                $payrollWorker = new \App\Models\PayrollWorker($workerData);
+                $payrollWorker->payroll_submission_id = $submission->id;
+                $previousMonthOt = $previousMonthOtMap[$workerData['worker_id']] ?? 0;
+
+                // Save worker first (without final calculations)
+                $payrollWorker->save();
+
+                // Save transactions BEFORE calculating salary
+                if (isset($workerData['transactions']) && is_array($workerData['transactions'])) {
+                    foreach ($workerData['transactions'] as $transaction) {
+                        $payrollWorker->transactions()->create([
+                            'type' => $transaction['type'],
+                            'amount' => $transaction['amount'],
+                            'remarks' => $transaction['remarks'],
+                        ]);
+                    }
+                }
+
+                // NOW calculate salary with transactions in database
+                $payrollWorker->calculateSalary($previousMonthOt);
+                $payrollWorker->save();
+
+                $totalAmount += $payrollWorker->total_payment;
+            }
+
+            $submission->update([
+                'total_workers' => count($selectedWorkersData),
+                'total_amount' => $totalAmount,
+                'total_with_penalty' => $totalAmount,
+            ]);
+
+            if ($action === 'submit') {
+                // Convert draft to pending_payment
+                $submission->update([
+                    'status' => 'pending_payment',
+                    'submitted_at' => now(),
+                ]);
+                $workerCount = count($selectedWorkersData);
+                return redirect()->route('client.timesheet')
+                    ->with('success', "Draft submitted successfully for {$submission->month_year}. {$workerCount} worker(s) included. Total amount: RM " . number_format($submission->total_amount, 2));
+            } else {
+                // Keep as draft
+                $workerCount = count($selectedWorkersData);
+                $this->successMessage = "Draft updated successfully. {$workerCount} worker(s) included.";
+                $this->loadData(); // Reload data
+            }
         } catch (\Exception $e) {
-            \Log::error('Failed to save', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             $this->errorMessage = 'Failed to save timesheet: ' . $e->getMessage();
         }
     }
 
     public function render()
     {
-        return view('livewire.client.timesheet')->layout('components.layouts.app', ['title' => __('Timesheet Management')]);
+        return view('livewire.client.timesheet-edit')->layout('components.layouts.app', ['title' => __('Edit Draft Submission')]);
     }
 }
