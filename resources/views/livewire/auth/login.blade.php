@@ -6,7 +6,7 @@
 
     <form wire:submit="login" class="flex flex-col gap-6">
         <!-- Username -->
-        <flux:input
+        <!-- <flux:input
             wire:model="username"
             :label="__('Username')"
             type="text"
@@ -14,11 +14,22 @@
             autofocus
             autocomplete="username"
             placeholder="CLABID"
-        />
+        /> -->
+        <flux:input
+            wire:model="username"
+            type="text"
+            placeholder="CLABID"
+            icon="envelope"
+            required
+            autofocus
+            clearable
+            autocomplete="username"
+            :label="''"
+        />        
 
         <!-- Password -->
         <div class="relative">
-            <flux:input
+            <!-- <flux:input
                 wire:model="password"
                 :label="__('Password')"
                 type="password"
@@ -26,13 +37,18 @@
                 autocomplete="current-password"
                 :placeholder="__('Password')"
                 viewable
-            />
+            /> -->
+            <flux:input
+                wire:model="password"
+                type="password"
+                placeholder="Password"
+                icon="lock-closed"
+                required
+                viewable
+                autocomplete="current-password"
+            /> 
 
-            @if (Route::has('password.request'))
-                <flux:link class="absolute end-0 top-0 text-sm" :href="route('password.request')" wire:navigate>
-                    {{ __('Forgot your password?') }}
-                </flux:link>
-            @endif
+
         </div>
 
         <!-- Remember Me -->
