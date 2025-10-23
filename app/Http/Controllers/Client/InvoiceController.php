@@ -56,7 +56,7 @@ class InvoiceController extends Controller
     {
         $clabNo = $request->user()->contractor_clab_no;
 
-        $invoice = PayrollSubmission::with(['workers', 'payment'])
+        $invoice = PayrollSubmission::with(['workers.transactions', 'payment'])
             ->where('id', $id)
             ->where('contractor_clab_no', $clabNo)
             ->firstOrFail();
@@ -72,12 +72,13 @@ class InvoiceController extends Controller
         $clabNo = $request->user()->contractor_clab_no;
         $contractor = $request->user();
 
-        $invoice = PayrollSubmission::with(['workers', 'payment'])
+        $invoice = PayrollSubmission::with(['workers.transactions', 'payment'])
             ->where('id', $id)
             ->where('contractor_clab_no', $clabNo)
             ->firstOrFail();
 
-        $pdf = \PDF::loadView('client.invoice-pdf', compact('invoice', 'contractor'));
+        $pdf = \PDF::loadView('client.invoice-pdf', compact('invoice', 'contractor'))
+            ->setPaper('a4', 'landscape');
 
         $filename = 'Invoice-INV-' . str_pad($invoice->id, 4, '0', STR_PAD_LEFT) . '-' . $invoice->month_year . '.pdf';
 

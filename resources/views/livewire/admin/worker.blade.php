@@ -83,7 +83,7 @@
                     />
                 </div>
                 <div>
-                    <flux:select wire:model.live="clientFilter" variant="listbox" placeholder="Filter by Client" size="sm">
+                    <flux:select wire:model.live="clientFilter" variant="listbox" searchable placeholder="Filter by Client" size="sm">
                         <flux:select.option value="">All Clients</flux:select.option>
                         @foreach($clients as $clientId => $clientName)
                             <flux:select.option value="{{ $clientId }}">{{ $clientName }}</flux:select.option>

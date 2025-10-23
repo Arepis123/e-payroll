@@ -261,14 +261,24 @@ class Worker extends Component
 
         // Apply sorting
         $transformedWorkers = $transformedWorkers->sort(function ($a, $b) {
+            // Helper function to convert d/m/Y date to timestamp for sorting
+            $dateToTimestamp = function ($dateString) {
+                if ($dateString === 'N/A' || empty($dateString)) {
+                    return PHP_INT_MAX; // Put N/A dates at the end
+                }
+                // Convert d/m/Y to timestamp
+                $date = \DateTime::createFromFormat('d/m/Y', $dateString);
+                return $date ? $date->getTimestamp() : PHP_INT_MAX;
+            };
+
             $primaryA = match($this->sortBy) {
                 'name' => strtolower($a['name']),
                 'passport' => strtolower($a['passport']),
                 'position' => strtolower($a['position']),
                 'country' => strtolower($a['country']),
                 'client' => strtolower($a['client']),
-                'passport_expiry' => strtotime($a['passport_expiry']),
-                'permit_expiry' => strtotime($a['permit_expiry']),
+                'passport_expiry' => $dateToTimestamp($a['passport_expiry']),
+                'permit_expiry' => $dateToTimestamp($a['permit_expiry']),
                 'status' => $a['status'] === 'Active' ? 0 : 1,
                 default => strtolower($a['name']),
             };
@@ -279,8 +289,8 @@ class Worker extends Component
                 'position' => strtolower($b['position']),
                 'country' => strtolower($b['country']),
                 'client' => strtolower($b['client']),
-                'passport_expiry' => strtotime($b['passport_expiry']),
-                'permit_expiry' => strtotime($b['permit_expiry']),
+                'passport_expiry' => $dateToTimestamp($b['passport_expiry']),
+                'permit_expiry' => $dateToTimestamp($b['permit_expiry']),
                 'status' => $b['status'] === 'Active' ? 0 : 1,
                 default => strtolower($b['name']),
             };

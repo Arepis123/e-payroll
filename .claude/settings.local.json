@@ -15,7 +15,8 @@
       "WebFetch(domain:fluxui.dev)",
       "Bash(Get-Content \"C:\\xampp\\htdocs\\e-payroll\\storage\\logs\\laravel.log\" -Tail 50)",
       "Bash(del \"C:\\xampp\\htdocs\\e-payroll\\resources\\views\\client\\timesheet-edit.blade.php\")",
-      "Bash(dir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\payroll.jpg\")"
+      "Bash(dir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\payroll.jpg\")",
+      "Bash(where:*)"
     ],
     "deny": [],
     "ask": []

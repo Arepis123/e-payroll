@@ -23,7 +23,11 @@
                 </div>                                
                 <flux:sidebar.item icon="house" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
                 <flux:sidebar.item icon="users" :href="route('admin.worker')" :current="request()->routeIs('admin.worker')" wire:navigate>{{ __('Worker') }}</flux:sidebar.item>
-                <flux:sidebar.item icon="wallet" :href="route('admin.salary')" :current="request()->routeIs('admin.salary')" wire:navigate>{{ __('Salary') }}</flux:sidebar.item>
+                {{-- <flux:sidebar.item icon="wallet" :href="route('admin.salary')" :current="request()->routeIs('admin.salary')" wire:navigate>{{ __('Payroll') }}</flux:sidebar.item> --}}
+                <flux:sidebar.group expandable icon="wallet" heading="Payroll" class="grid">
+                    <flux:sidebar.item :href="route('admin.salary')" :current="request()->routeIs('admin.salary')" wire:navigate>All submissions</flux:sidebar.item>
+                    <flux:sidebar.item :href="route('admin.missing-submissions')" :current="request()->routeIs('admin.missing-submissions')" wire:navigate>No submissions</flux:sidebar.item>
+                </flux:sidebar.group>  
                 <flux:sidebar.item icon="file-text" :href="route('admin.report')" :current="request()->routeIs('admin.report')" wire:navigate>{{ __('Report') }}</flux:sidebar.item>
                 <flux:sidebar.item icon="newspaper" :href="route('admin.news')" :current="request()->routeIs('admin.news')" wire:navigate>{{ __('News') }}</flux:sidebar.item>
             </flux:sidebar.nav>

@@ -69,7 +69,7 @@
                 <div class="relative z-20 mt-auto">
                     <template x-for="(slide, index) in slides" :key="index">
                         <blockquote
-                            class="space-y-2 transition-opacity duration-1000 absolute inset-x-0 bottom-0"
+                            class="space-y-2 transition-opacity duration-2000 absolute inset-x-0 bottom-0"
                             style="font-family: 'Albert Sans', sans-serif;"
                             :style="`opacity: ${currentSlide === index ? 1 : 0};`"
                             x-show="currentSlide === index"
@@ -96,6 +96,11 @@
             <!-- Right Side - Login Form -->
             <div class="w-full lg:p-8">
                 <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+                    <div class="text-center mb-8">
+                        <img src="{{ asset('images/logo-clab.png') }}" alt="CLAB Logo" class="mx-auto w-12 mb-3">
+                        <h1 class="text-3xl font-bold">e-SALARY CLAB</h1>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">Subcontract Labor Management</p>
+                    </div>
                     <!-- Mobile Logo (shown on small screens) -->
                     <a href="{{ route('home') }}" class="z-20 flex flex-col items-center gap-2 font-medium lg:hidden" wire:navigate>
                         <span class="flex h-9 w-9 items-center justify-center rounded-md">

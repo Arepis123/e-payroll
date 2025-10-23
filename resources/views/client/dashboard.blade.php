@@ -55,9 +55,21 @@
                                     {!! nl2br(e($news->description)) !!}
                                 </p>
                                 @if($news->button_text && $news->button_url)
-                                    <flux:button variant="primary" href="{{ $news->button_url }}" wire:navigate onclick="closeNewsModal()">
-                                        {{ $news->button_text }}
-                                    </flux:button>
+                                    @php
+                                        // Check if URL is external (starts with http://, https://, or //)
+                                        $isExternal = preg_match('/^(https?:\/\/|\/\/)/', $news->button_url);
+                                    @endphp
+
+                                    @if($isExternal)
+                                        <flux:button variant="primary" href="{{ $news->button_url }}" target="_blank" rel="noopener noreferrer" onclick="closeNewsModal()">
+                                            {{ $news->button_text }}
+                                            <flux:icon.arrow-top-right-on-square class="size-4 ml-1" />
+                                        </flux:button>
+                                    @else
+                                        <flux:button variant="primary" href="{{ $news->button_url }}" wire:navigate onclick="closeNewsModal()">
+                                            {{ $news->button_text }}
+                                        </flux:button>
+                                    @endif
                                 @endif
                             </div>
                         </div>
@@ -381,9 +393,6 @@
                 modal.classList.remove('opacity-0', 'invisible');
                 modal.querySelector('.transform').classList.remove('scale-95');
                 modal.querySelector('.transform').classList.add('scale-100');
-
-                // Start auto-sliding
-                startAutoSlide();
             }
         }
 
@@ -457,7 +466,7 @@
         function startAutoSlide() {
             autoSlideInterval = setInterval(() => {
                 nextSlide();
-            }, 5000); // Change slide every 5 seconds
+            }, 7000); // Change slide every 10 seconds
         }
 
         function stopAutoSlide() {
@@ -466,8 +475,8 @@
             }
         }
 
-        // Show modal on page load if there are news items
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize carousel function
+        function initializeCarousel() {
             const slides = document.querySelectorAll('.carousel-slide');
 
             // Only show modal if there are news items
@@ -478,22 +487,26 @@
 
                 // Initialize first slide
                 goToSlide(0);
+            }
+        }
 
-                // Add keyboard navigation (arrows only, no Escape key)
-                document.addEventListener('keydown', function(e) {
-                    const modal = document.getElementById('newsModal');
-                    if (!modal.classList.contains('invisible')) {
-                        if (e.key === 'ArrowLeft') {
-                            prevSlide();
-                        } else if (e.key === 'ArrowRight') {
-                            nextSlide();
-                        }
-                        // Removed Escape key functionality - must use close button
-                    }
-                });
-
-                // Removed click outside to close - must use close button
+        // Add keyboard navigation (arrows only, no Escape key)
+        document.addEventListener('keydown', function(e) {
+            const modal = document.getElementById('newsModal');
+            if (modal && !modal.classList.contains('invisible')) {
+                if (e.key === 'ArrowLeft') {
+                    prevSlide();
+                } else if (e.key === 'ArrowRight') {
+                    nextSlide();
+                }
+                // Removed Escape key functionality - must use close button
             }
         });
+
+        // Show modal on initial page load
+        document.addEventListener('DOMContentLoaded', initializeCarousel);
+
+        // Show modal on Livewire navigation (for wire:navigate)
+        document.addEventListener('livewire:navigated', initializeCarousel);
     </script>
 </x-layouts.app>
