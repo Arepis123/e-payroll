@@ -71,34 +71,34 @@
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Paid (Jan 2025)</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 486,250</p>
+                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Paid ({{ now()->format('M Y') }})</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($stats['total_paid'], 2) }}</p>
                     </div>
                     <div class="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
                         <flux:icon.check-circle class="size-6 text-green-600 dark:text-green-400" />
                     </div>
                 </div>
-                <p class="text-xs text-zinc-600 dark:text-zinc-400">11 completed payments</p>
+                <p class="text-xs text-zinc-600 dark:text-zinc-400">{{ $stats['completed_payments'] }} completed {{ Str::plural('payment', $stats['completed_payments']) }}</p>
             </flux:card>
 
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Pending Amount</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 124,800</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($stats['pending_amount'], 2) }}</p>
                     </div>
                     <div class="rounded-full bg-orange-100 dark:bg-orange-900/30 p-3">
                         <flux:icon.clock class="size-6 text-orange-600 dark:text-orange-400" />
                     </div>
                 </div>
-                <p class="text-xs text-zinc-600 dark:text-zinc-400">7 pending payments</p>
+                <p class="text-xs text-zinc-600 dark:text-zinc-400">{{ $stats['pending_payments'] }} pending {{ Str::plural('payment', $stats['pending_payments']) }}</p>
             </flux:card>
 
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Average Salary</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM 2,650</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($stats['average_salary'], 2) }}</p>
                     </div>
                     <div class="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
                         <flux:icon.calculator class="size-6 text-blue-600 dark:text-blue-400" />
@@ -111,13 +111,13 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Hours</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">60,192</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ number_format($stats['total_hours']) }}</p>
                     </div>
                     <div class="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3">
                         <flux:icon.clock class="size-6 text-purple-600 dark:text-purple-400" />
                     </div>
                 </div>
-                <p class="text-xs text-zinc-600 dark:text-zinc-400">Including 2,400 OT hours</p>
+                <p class="text-xs text-zinc-600 dark:text-zinc-400">Including {{ number_format($stats['overtime_hours']) }} OT hours</p>
             </flux:card>
         </div>
 
@@ -142,214 +142,136 @@
 
         <!-- Payment Summary by Client -->
         <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-            <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Payment Summary by Client (January 2025)</h2>
+            <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Payment Summary by Client</h2>
+                    <div class="min-w-[180px]">
+                        <flux:select wire:model.live="selectedMonth" wire:change="filterByMonthYear($event.target.value)">
+                            @foreach($availableMonths as $month)
+                                <flux:select.option value="{{ $month['value'] }}" @if($month['month'] == $selectedMonth && $month['year'] == $selectedYear) selected @endif>
+                                    {{ $month['label'] }}
+                                </flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+                </div>
                 <flux:button variant="ghost" size="sm">
                     <flux:icon.arrow-down-tray class="size-4" />
                     Export CSV
                 </flux:button>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Client Name</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Workers</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Hours</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Basic Salary</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Overtime</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Allowances</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Deductions</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Amount</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">Miqabina Sdn Bhd</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">12</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">2,112</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 38,400</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 4,200</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 2,400</td>
-                            <td class="py-3 text-sm text-red-600 dark:text-red-400">RM 200</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 45,200</td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Paid</flux:badge>
-                            </td>
-                        </tr>
+            @if(count($clientPayments) > 0)
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-zinc-200 dark:border-zinc-700">
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Client Name</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Workers</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Hours</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Basic Salary</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Overtime</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Allowances</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Deductions</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Amount</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                            @foreach($clientPayments as $client)
+                                <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                    <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $client['client'] }}</td>
+                                    <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $client['workers'] }}</td>
+                                    <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ number_format($client['hours']) }}</td>
+                                    <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM {{ number_format($client['basic_salary'], 2) }}</td>
+                                    <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM {{ number_format($client['overtime'], 2) }}</td>
+                                    <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM {{ number_format($client['allowances'], 2) }}</td>
+                                    <td class="py-3 text-sm text-red-600 dark:text-red-400">RM {{ number_format($client['deductions'], 2) }}</td>
+                                    <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM {{ number_format($client['total'], 2) }}</td>
+                                    <td class="py-3">
+                                        <flux:badge color="{{ $client['status'] === 'Paid' ? 'green' : 'orange' }}" size="sm">{{ $client['status'] }}</flux:badge>
+                                    </td>
+                                </tr>
+                            @endforeach
 
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">WCT Berhad</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">8</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">1,408</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 27,200</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 3,100</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 1,600</td>
-                            <td class="py-3 text-sm text-red-600 dark:text-red-400">RM 0</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 32,100</td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Paid</flux:badge>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">Chuan Luck Piling Sdn Bhd</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">6</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">1,056</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 24,000</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 2,800</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 1,200</td>
-                            <td class="py-3 text-sm text-red-600 dark:text-red-400">RM 500</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 28,500</td>
-                            <td class="py-3">
-                                <flux:badge color="orange" size="sm">Pending</flux:badge>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">Best Stone Sdn Bhd</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">15</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">2,640</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 44,000</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 5,600</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 3,000</td>
-                            <td class="py-3 text-sm text-red-600 dark:text-red-400">RM 0</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 52,800</td>
-                            <td class="py-3">
-                                <flux:badge color="green" size="sm">Paid</flux:badge>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">AIMA Construction Sdn Bhd</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">5</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">880</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 16,000</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 1,800</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 1,000</td>
-                            <td class="py-3 text-sm text-red-600 dark:text-red-400">RM 100</td>
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">RM 18,900</td>
-                            <td class="py-3">
-                                <flux:badge color="orange" size="sm">Pending</flux:badge>
-                            </td>
-                        </tr>
-
-                        <tr class="bg-zinc-100 dark:bg-zinc-800 font-semibold">
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">TOTAL</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">46</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">8,096</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 149,600</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 17,500</td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM 9,200</td>
-                            <td class="py-3 text-sm text-red-600 dark:text-red-400">RM 800</td>
-                            <td class="py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100">RM 177,500</td>
-                            <td class="py-3"></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                            <tr class="bg-zinc-100 dark:bg-zinc-800 font-semibold">
+                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">TOTAL</td>
+                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ collect($clientPayments)->sum('workers') }}</td>
+                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ number_format(collect($clientPayments)->sum('hours')) }}</td>
+                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM {{ number_format(collect($clientPayments)->sum('basic_salary'), 2) }}</td>
+                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM {{ number_format(collect($clientPayments)->sum('overtime'), 2) }}</td>
+                                <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">RM {{ number_format(collect($clientPayments)->sum('allowances'), 2) }}</td>
+                                <td class="py-3 text-sm text-red-600 dark:text-red-400">RM {{ number_format(collect($clientPayments)->sum('deductions'), 2) }}</td>
+                                <td class="py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format(collect($clientPayments)->sum('total'), 2) }}</td>
+                                <td class="py-3"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="text-center py-12">
+                    <p class="text-zinc-600 dark:text-zinc-400">No client payment data available for {{ \Carbon\Carbon::create($selectedYear, $selectedMonth)->format('F Y') }}</p>
+                </div>
+            @endif
         </flux:card>
 
         <!-- Worker Payroll Summary -->
         <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-            <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Top Paid Workers (January 2025)</h2>
-                <flux:button variant="ghost" size="sm" href="#" wire:navigate>View all workers</flux:button>
+            <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Top Paid Workers</h2>
+                    <div class="min-w-[180px]">
+                        <flux:select wire:model.live="selectedMonth" wire:change="filterByMonthYear($event.target.value)">
+                            @foreach($availableMonths as $month)
+                                <flux:select.option value="{{ $month['value'] }}" @if($month['month'] == $selectedMonth && $month['year'] == $selectedYear) selected @endif>
+                                    {{ $month['label'] }}
+                                </flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+                </div>
+                <flux:button variant="ghost" size="sm" href="{{ route('admin.worker') }}" wire:navigate>View all workers</flux:button>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-zinc-200 dark:border-zinc-700">
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Rank</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Employee ID</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Name</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Position</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Client</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Hours Worked</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Earned</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">1</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">EMP004</td>
-                            <td class="py-3">
-                                <div class="flex items-center gap-3">
-                                    <flux:avatar size="sm" name="Mojahidul Rohim" />
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">Mojahidul Rohim</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">General Worker</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Best Stone</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">192 hrs</td>
-                            <td class="py-3 text-sm font-medium text-green-600 dark:text-green-400">RM 5,100</td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">2</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">EMP001</td>
-                            <td class="py-3">
-                                <div class="flex items-center gap-3">
-                                    <flux:avatar size="sm" name="Jefri Aldi Kurniawan" />
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">Jefri Aldi Kurniawan</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">General Worker</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Miqabina</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">184 hrs</td>
-                            <td class="py-3 text-sm font-medium text-green-600 dark:text-green-400">RM 3,900</td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">3</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">EMP003</td>
-                            <td class="py-3">
-                                <div class="flex items-center gap-3">
-                                    <flux:avatar size="sm" name="Chit Win Maung" />
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">Chit Win Maung</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">General Worker</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Chuan Luck Piling</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">176 hrs</td>
-                            <td class="py-3 text-sm font-medium text-green-600 dark:text-green-400">RM 3,200</td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">4</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">EMP006</td>
-                            <td class="py-3">
-                                <div class="flex items-center gap-3">
-                                    <flux:avatar size="sm" name="Heri Siswanto" />
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">Heri Siswanto</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">Carpenter</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Miqabina</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">180 hrs</td>
-                            <td class="py-3 text-sm font-medium text-green-600 dark:text-green-400">RM 2,850</td>
-                        </tr>
-
-                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                            <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">5</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">EMP005</td>
-                            <td class="py-3">
-                                <div class="flex items-center gap-3">
-                                    <flux:avatar size="sm" name="Ghulam Abbas" />
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">Ghulam Abbas</span>
-                                </div>
-                            </td>
-                            <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">General Worker</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">Miqabina</td>
-                            <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">176 hrs</td>
-                            <td class="py-3 text-sm font-medium text-green-600 dark:text-green-400">RM 2,400</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            @if(count($topWorkers) > 0)
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-zinc-200 dark:border-zinc-700">
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Rank</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Worker ID</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Name</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Position</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Client</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Hours Worked</th>
+                                <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Earned</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                            @foreach($topWorkers as $worker)
+                                <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                    <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $worker['rank'] }}</td>
+                                    <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $worker['worker_id'] }}</td>
+                                    <td class="py-3">
+                                        <div class="flex items-center gap-3">
+                                            <flux:avatar size="sm" name="{{ $worker['name'] }}" />
+                                            <span class="text-sm text-zinc-900 dark:text-zinc-100">{{ $worker['name'] }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $worker['position'] }}</td>
+                                    <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $worker['client'] }}</td>
+                                    <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $worker['hours'] }} hrs</td>
+                                    <td class="py-3 text-sm font-medium text-green-600 dark:text-green-400">RM {{ number_format($worker['earned'], 2) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="text-center py-12">
+                    <p class="text-zinc-600 dark:text-zinc-400">No worker data available for {{ \Carbon\Carbon::create($selectedYear, $selectedMonth)->format('F Y') }}</p>
+                </div>
+            @endif
         </flux:card>
 
         <!-- Quick Report Templates -->
@@ -402,10 +324,10 @@
             new Chart(trendCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'],
+                    labels: @json($chartData['trend']['labels']),
                     datasets: [{
                         label: 'Total Payments (RM)',
-                        data: [502000, 475000, 490000, 468000, 485000, 486250],
+                        data: @json($chartData['trend']['data']),
                         backgroundColor: 'rgba(139, 92, 246, 0.8)',
                         borderColor: '#8b5cf6',
                         borderWidth: 2,
@@ -462,10 +384,10 @@
             new Chart(pieCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Miqabina', 'Miqabina', 'Chuan Luck Piling', 'Best Stone', 'AIMA Construction'],
+                    labels: @json($chartData['distribution']['labels']),
                     datasets: [{
                         label: 'Payment Amount',
-                        data: [45200, 32100, 28500, 52800, 18900],
+                        data: @json($chartData['distribution']['data']),
                         backgroundColor: [
                             'rgba(59, 130, 246, 0.8)',   // Blue
                             'rgba(16, 185, 129, 0.8)',   // Green

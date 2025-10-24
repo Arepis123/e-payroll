@@ -224,7 +224,7 @@
                 </table>
             </div>
         </flux:card>
-
+        
         <!-- Payment Action -->
         @if($invoice->status === 'pending_payment' || $invoice->status === 'overdue')
             <flux:card class="p-6 dark:bg-zinc-900 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
@@ -232,14 +232,14 @@
                     <div>
                         <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Ready to Pay?</h3>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-                            Complete your payment via Billplz secure payment gateway
+                            Complete your payment securely via Billplz using Online Banking (FPX)
                         </p>
                     </div>
                     <form method="POST" action="{{ route('client.payment.create', $invoice->id) }}">
                         @csrf
                         <flux:button type="submit" variant="primary">
-                            {{-- <flux:icon.credit-card class="size-5 inline" /> --}}
-                            Pay Now
+                            <flux:icon.credit-card class="size-5 inline me-1" />
+                            Pay with Online Banking
                         </flux:button>
                     </form>
                 </div>
@@ -261,6 +261,22 @@
             </flux:card>
         @endif
 
+        <!-- Payment Method Notice -->
+        @if($invoice->status === 'pending_payment' || $invoice->status === 'overdue')
+            <flux:card class="p-4 dark:bg-zinc-900 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <div class="flex gap-3">
+                    <flux:icon.information-circle class="size-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div class="text-sm text-amber-900 dark:text-amber-100">
+                        <p class="font-medium">Payment Method Information</p>
+                        <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            Payment can only be made using <span class="font-semibold">Online Banking (FPX)</span> through our secure <span class="font-semibold">Billplz payment gateway</span>.
+                            Credit/debit card payments are not accepted. Please ensure your online banking is activated before proceeding.
+                        </p>
+                    </div>
+                </div>
+            </flux:card>
+        @endif
+
         <!-- OT Information Notice -->
         <flux:card class="p-4 dark:bg-zinc-900 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
             <div class="flex gap-3">
@@ -274,5 +290,6 @@
                 </div>
             </div>
         </flux:card>
+
     </div>
 </x-layouts.app>

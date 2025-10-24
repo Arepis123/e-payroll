@@ -227,6 +227,11 @@
             e-Salary Management System
         </div>
 
+        <!-- Invoice Purpose -->
+        <div style="background-color: #f5f5f5; padding: 8px 10px; margin-bottom: 10px; border-left: 4px solid #000; font-size: 10px; font-weight: bold;">
+            PAYROLL PAYMENT FOR: {{ strtoupper($invoice->month_year) }}
+        </div>
+
         <!-- Bill To and Invoice Details -->
         <table style="width: 100%; margin-bottom: 8px;">
             <tr>
@@ -350,6 +355,13 @@
                     <div style="background-color: #ddeafd; border-left: 4px solid #2b80ff; padding: 5px 8px; margin-bottom: 7px; font-size: 7px; border-top-right-radius: 1px; border-bottom-right-radius: 1px;">
                         <strong>IMPORTANT - DEFERRED OT PAYMENT:</strong> The overtime hours shown above are recorded for {{ $invoice->month_year }}, but they will be paid in the following month's payroll. This month's payment includes basic salary plus previous month's overtime.
                     </div>
+
+                    <!-- Payment Method Notice -->
+                    @if($invoice->status !== 'paid')
+                    <div style="background-color: #fef3e0; border-left: 4px solid #ff9800; padding: 5px 8px; margin-bottom: 7px; font-size: 7px; border-top-right-radius: 1px; border-bottom-right-radius: 1px;">
+                        <strong>PAYMENT METHOD INFORMATION:</strong> Payment can only be made using <strong>Online Banking (FPX)</strong> through our secure <strong>Billplz payment gateway</strong>. Credit/debit card payments are not accepted. Please ensure your online banking is activated before proceeding with payment.
+                    </div>
+                    @endif
 
                     <!-- Penalty Notice -->
                     @if($invoice->has_penalty)

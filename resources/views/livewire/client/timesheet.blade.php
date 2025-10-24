@@ -330,6 +330,7 @@
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
                                 <flux:menu>
                                     <flux:menu.item icon="eye" icon:variant="outline" href="{{ route('client.timesheet.show', $submission->id) }}">View Details</flux:menu.item>
+                                    <flux:menu.item icon="document-text" icon:variant="outline" href="{{ route('client.invoices.show', $submission->id) }}">View Invoice</flux:menu.item>
                                     @if($submission->status === 'draft')
                                         <flux:menu.separator />
                                         <flux:menu.item icon="pencil" icon:variant="outline" href="{{ route('client.timesheet.edit', $submission->id) }}">Edit Draft</flux:menu.item>

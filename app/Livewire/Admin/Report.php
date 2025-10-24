@@ -14,17 +14,64 @@ class Report extends Component
     public $reportType = '';
     public $period = '';
     public $clientFilter = '';
+    public $selectedMonth;
+    public $selectedYear;
     public $stats = [];
     public $clientPayments = [];
     public $topWorkers = [];
     public $chartData = [];
+    public $availableMonths = [];
 
     public function mount()
     {
+        // Set default to current month/year
+        $this->selectedMonth = now()->month;
+        $this->selectedYear = now()->year;
+
+        // Generate available months (last 12 months)
+        $this->generateAvailableMonths();
+
         $this->loadStats();
         $this->loadClientPayments();
         $this->loadTopWorkers();
         $this->loadChartData();
+    }
+
+    protected function generateAvailableMonths()
+    {
+        $months = [];
+        for ($i = 0; $i < 12; $i++) {
+            $date = now()->subMonths($i);
+            $months[] = [
+                'value' => $date->format('Y-m'),
+                'label' => $date->format('F Y'),
+                'month' => $date->month,
+                'year' => $date->year,
+            ];
+        }
+        $this->availableMonths = $months;
+    }
+
+    public function updatedSelectedMonth()
+    {
+        $this->loadClientPayments();
+        $this->loadTopWorkers();
+    }
+
+    public function updatedSelectedYear()
+    {
+        $this->loadClientPayments();
+        $this->loadTopWorkers();
+    }
+
+    public function filterByMonthYear($monthYear)
+    {
+        list($year, $month) = explode('-', $monthYear);
+        $this->selectedYear = (int)$year;
+        $this->selectedMonth = (int)$month;
+
+        $this->loadClientPayments();
+        $this->loadTopWorkers();
     }
 
     protected function loadStats()
@@ -89,86 +136,168 @@ class Report extends Component
 
     protected function loadClientPayments()
     {
-        $this->clientPayments = [
-            [
-                'client' => 'Miqabina Sdn Bhd',
-                'workers' => 12,
-                'hours' => 2112,
-                'basic_salary' => 38400,
-                'overtime' => 4200,
-                'allowances' => 2400,
-                'deductions' => 200,
-                'total' => 45200,
-                'status' => 'Paid',
-            ],
-            [
-                'client' => 'WCT Berhad',
-                'workers' => 8,
-                'hours' => 1408,
-                'basic_salary' => 27200,
-                'overtime' => 3100,
-                'allowances' => 1600,
-                'deductions' => 0,
-                'total' => 32100,
-                'status' => 'Paid',
-            ],
-            [
-                'client' => 'Chuan Luck Piling Sdn Bhd',
-                'workers' => 6,
-                'hours' => 1056,
-                'basic_salary' => 24000,
-                'overtime' => 2800,
-                'allowances' => 1200,
-                'deductions' => 500,
-                'total' => 28500,
-                'status' => 'Pending',
-            ],
-            [
-                'client' => 'Best Stone Sdn Bhd',
-                'workers' => 15,
-                'hours' => 2640,
-                'basic_salary' => 44000,
-                'overtime' => 5600,
-                'allowances' => 3000,
-                'deductions' => 0,
-                'total' => 52800,
-                'status' => 'Paid',
-            ],
-            [
-                'client' => 'AIMA Construction Sdn Bhd',
-                'workers' => 5,
-                'hours' => 880,
-                'basic_salary' => 16000,
-                'overtime' => 1800,
-                'allowances' => 1000,
-                'deductions' => 100,
-                'total' => 18900,
-                'status' => 'Pending',
-            ],
-        ];
+        // Use selected month/year or default to current
+        $currentMonth = $this->selectedMonth ?? now()->month;
+        $currentYear = $this->selectedYear ?? now()->year;
+
+        // Get all submissions for selected month/year grouped by contractor
+        $submissions = PayrollSubmission::where('month', $currentMonth)
+            ->where('year', $currentYear)
+            ->with(['workers', 'user'])
+            ->get()
+            ->groupBy('contractor_clab_no');
+
+        $clientPayments = [];
+
+        foreach ($submissions as $clabNo => $contractorSubmissions) {
+            $firstSubmission = $contractorSubmissions->first();
+            $clientName = $firstSubmission->user
+                ? ($firstSubmission->user->company_name ?? $firstSubmission->user->name)
+                : 'Contractor ' . $clabNo;
+
+            // Aggregate data across all submissions for this contractor
+            $totalWorkers = $contractorSubmissions->sum(function ($submission) {
+                return $submission->workers->count();
+            });
+
+            $totalHours = $contractorSubmissions->sum(function ($submission) {
+                return $submission->workers->sum(function ($worker) {
+                    return $worker->regular_hours + $worker->ot_normal_hours + $worker->ot_rest_hours + $worker->ot_public_hours;
+                });
+            });
+
+            $totalBasicSalary = $contractorSubmissions->sum(function ($submission) {
+                return $submission->workers->sum('basic_salary');
+            });
+
+            $totalOvertime = $contractorSubmissions->sum(function ($submission) {
+                return $submission->workers->sum(function ($worker) {
+                    return $worker->ot_normal_pay + $worker->ot_rest_pay + $worker->ot_public_pay;
+                });
+            });
+
+            $totalAllowances = $contractorSubmissions->sum(function ($submission) {
+                return $submission->workers->sum('allowance');
+            });
+
+            $totalDeductions = $contractorSubmissions->sum(function ($submission) {
+                return $submission->workers->sum(function ($worker) {
+                    return $worker->epf_employee + $worker->socso_employee + $worker->other_deductions;
+                });
+            });
+
+            $totalAmount = $contractorSubmissions->sum('total_with_penalty');
+
+            // Determine status based on submissions
+            $hasAnyPaid = $contractorSubmissions->contains(function ($submission) {
+                return $submission->status === 'paid';
+            });
+            $hasAnyPending = $contractorSubmissions->contains(function ($submission) {
+                return in_array($submission->status, ['pending_payment', 'overdue']);
+            });
+
+            $status = $hasAnyPaid && !$hasAnyPending ? 'Paid' : 'Pending';
+
+            $clientPayments[] = [
+                'client' => $clientName,
+                'workers' => $totalWorkers,
+                'hours' => round($totalHours, 0),
+                'basic_salary' => round($totalBasicSalary, 2),
+                'overtime' => round($totalOvertime, 2),
+                'allowances' => round($totalAllowances, 2),
+                'deductions' => round($totalDeductions, 2),
+                'total' => round($totalAmount, 2),
+                'status' => $status,
+            ];
+        }
+
+        // Sort by total amount descending
+        usort($clientPayments, function ($a, $b) {
+            return $b['total'] <=> $a['total'];
+        });
+
+        $this->clientPayments = $clientPayments;
     }
 
     protected function loadTopWorkers()
     {
-        $this->topWorkers = [
-            ['rank' => 1, 'employee_id' => 'EMP004', 'name' => 'Mojahidul Rohim', 'position' => 'General Worker', 'client' => 'Best Stone', 'hours' => 192, 'earned' => 5100],
-            ['rank' => 2, 'employee_id' => 'EMP001', 'name' => 'Jefri Aldi Kurniawan', 'position' => 'General Worker', 'client' => 'Miqabina', 'hours' => 184, 'earned' => 3900],
-            ['rank' => 3, 'employee_id' => 'EMP003', 'name' => 'Chit Win Maung', 'position' => 'General Worker', 'client' => 'Chuan Luck Piling', 'hours' => 176, 'earned' => 3200],
-            ['rank' => 4, 'employee_id' => 'EMP006', 'name' => 'Heri Siswanto', 'position' => 'Carpenter', 'client' => 'Miqabina', 'hours' => 180, 'earned' => 2850],
-            ['rank' => 5, 'employee_id' => 'EMP005', 'name' => 'Ghulam Abbas', 'position' => 'General Worker', 'client' => 'Miqabina', 'hours' => 176, 'earned' => 2400],
-        ];
+        // Use selected month/year or default to current
+        $currentMonth = $this->selectedMonth ?? now()->month;
+        $currentYear = $this->selectedYear ?? now()->year;
+
+        // Get top 5 workers by total salary (including overtime) for selected month
+        $topWorkers = PayrollWorker::whereHas('payrollSubmission', function ($query) use ($currentMonth, $currentYear) {
+                $query->where('month', $currentMonth)
+                      ->where('year', $currentYear);
+            })
+            ->with(['payrollSubmission.user', 'worker'])
+            ->get()
+            ->map(function ($worker) {
+                $totalHours = $worker->regular_hours + $worker->ot_normal_hours + $worker->ot_rest_hours + $worker->ot_public_hours;
+                $totalEarned = $worker->gross_salary;
+
+                return [
+                    'worker_id' => $worker->worker_id,
+                    'name' => $worker->worker_name ?? ($worker->worker ? $worker->worker->wkr_name : 'Worker ' . $worker->worker_id),
+                    'position' => 'General Worker',
+                    'client' => $worker->payrollSubmission && $worker->payrollSubmission->user
+                        ? ($worker->payrollSubmission->user->company_name ?? $worker->payrollSubmission->user->name)
+                        : 'N/A',
+                    'hours' => round($totalHours, 0),
+                    'earned' => round($totalEarned, 2),
+                ];
+            })
+            ->sortByDesc('earned')
+            ->take(5)
+            ->values();
+
+        // Add rank
+        $this->topWorkers = $topWorkers->map(function ($worker, $index) {
+            $worker['rank'] = $index + 1;
+            return $worker;
+        })->toArray();
     }
 
     protected function loadChartData()
     {
+        // Monthly trend: Get last 6 months of payment data
+        $trendLabels = [];
+        $trendData = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $month = $date->month;
+            $year = $date->year;
+
+            $trendLabels[] = $date->format('M');
+
+            $total = PayrollSubmission::where('month', $month)
+                ->where('year', $year)
+                ->sum('total_with_penalty');
+
+            $trendData[] = round($total, 2);
+        }
+
+        // Client distribution: Get current month data grouped by client
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+
+        $distributionLabels = [];
+        $distributionData = [];
+
+        foreach ($this->clientPayments as $client) {
+            $distributionLabels[] = $client['client'];
+            $distributionData[] = $client['total'];
+        }
+
         $this->chartData = [
             'trend' => [
-                'labels' => ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'],
-                'data' => [502000, 475000, 490000, 468000, 485000, 486250],
+                'labels' => $trendLabels,
+                'data' => $trendData,
             ],
             'distribution' => [
-                'labels' => ['Miqabina', 'WCT', 'Chuan Luck Piling', 'Best Stone', 'AIMA Construction'],
-                'data' => [45200, 32100, 28500, 52800, 18900],
+                'labels' => $distributionLabels,
+                'data' => $distributionData,
             ],
         ];
     }

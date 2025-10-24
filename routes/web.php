@@ -16,6 +16,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('workers/{worker}', [\App\Http\Controllers\Admin\WorkerController::class, 'show'])->name('workers.show');
     Route::get('salary', \App\Livewire\Admin\Salary::class)->name('salary');
     Route::get('missing-submissions', \App\Livewire\Admin\MissingSubmissions::class)->name('missing-submissions');
+    Route::get('missing-submissions/{clabNo}', \App\Livewire\Admin\MissingSubmissionsDetail::class)->name('missing-submissions.detail');
     Route::get('report', \App\Livewire\Admin\Report::class)->name('report');
     Route::get('news', \App\Livewire\Admin\NewsManagement::class)->name('news');
 });
