@@ -30,10 +30,25 @@ class Dashboard extends Component
         $lastMonth = now()->subMonth()->month;
         $lastMonthYear = now()->subMonth()->year;
 
-        // Total clients
-        $totalClients = User::where('role', 'client')->count();
-        $lastMonthClients = User::where('role', 'client')
-            ->where('created_at', '<', now()->startOfMonth())
+        // Get all clients
+        $allClients = User::where('role', 'client')->get();
+        $totalClients = $allClients->count();
+
+        // Get clients who have submitted and paid for current month
+        $clientsWithSubmission = PayrollSubmission::where('month', $currentMonth)
+            ->where('year', $currentYear)
+            ->whereIn('status', ['paid', 'pending_payment'])
+            ->distinct('contractor_clab_no')
+            ->pluck('contractor_clab_no');
+
+        // Clients without submission or payment this month
+        $clientsWithoutSubmission = $allClients->whereNotIn('contractor_clab_no', $clientsWithSubmission)->count();
+
+        // Previous month for comparison
+        $clientsWithSubmissionLastMonth = PayrollSubmission::where('month', $lastMonth)
+            ->where('year', $lastMonthYear)
+            ->whereIn('status', ['paid', 'pending_payment'])
+            ->distinct('contractor_clab_no')
             ->count();
 
         // Active workers (unique workers from all submissions)
@@ -55,17 +70,17 @@ class Dashboard extends Component
             ->sum('total_with_penalty');
 
         // Calculate growth
-        $clientsGrowth = $totalClients - $lastMonthClients;
         $paymentsGrowth = $lastMonthPayments > 0
             ? round((($thisMonthPayments - $lastMonthPayments) / $lastMonthPayments) * 100, 1)
             : 0;
 
         $this->stats = [
+            'clients_without_submission' => $clientsWithoutSubmission,
             'total_clients' => $totalClients,
+            'clients_with_submission_count' => $clientsWithSubmission->count(),
             'active_workers' => $activeWorkers,
             'this_month_payments' => $thisMonthPayments,
             'outstanding_balance' => $outstandingBalance,
-            'clients_growth' => $clientsGrowth,
             'workers_growth' => 0, // TODO: Track worker growth over time
             'payments_growth' => $paymentsGrowth,
         ];

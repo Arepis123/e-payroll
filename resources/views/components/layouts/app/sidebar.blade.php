@@ -20,14 +20,16 @@
             <flux:sidebar.nav>
                 <div class="px-3 py-2 mt-4 in-data-flux-sidebar-collapsed-desktop:hidden">
                     <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wider">{{ __('MAIN') }}</h3>
-                </div>                                
+                </div>
                 <flux:sidebar.item icon="house" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
                 <flux:sidebar.item icon="users" :href="route('admin.worker')" :current="request()->routeIs('admin.worker')" wire:navigate>{{ __('Worker') }}</flux:sidebar.item>
                 {{-- <flux:sidebar.item icon="wallet" :href="route('admin.salary')" :current="request()->routeIs('admin.salary')" wire:navigate>{{ __('Payroll') }}</flux:sidebar.item> --}}
                 <flux:sidebar.group expandable icon="wallet" heading="Payroll" class="grid">
                     <flux:sidebar.item :href="route('admin.salary')" :current="request()->routeIs('admin.salary')" wire:navigate>All submissions</flux:sidebar.item>
                     <flux:sidebar.item :href="route('admin.missing-submissions')" :current="request()->routeIs('admin.missing-submissions')" wire:navigate>No submissions</flux:sidebar.item>
-                </flux:sidebar.group>  
+                </flux:sidebar.group>
+                <flux:sidebar.item icon="document-text" :href="route('admin.invoices')" :current="request()->routeIs('admin.invoices')" wire:navigate>{{ __('Invoices') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="bell" :href="route('admin.notifications')" :current="request()->routeIs('admin.notifications')" wire:navigate>{{ __('Notifications') }}</flux:sidebar.item>
                 <flux:sidebar.item icon="file-text" :href="route('admin.report')" :current="request()->routeIs('admin.report')" wire:navigate>{{ __('Report') }}</flux:sidebar.item>
                 <flux:sidebar.item icon="newspaper" :href="route('admin.news')" :current="request()->routeIs('admin.news')" wire:navigate>{{ __('News') }}</flux:sidebar.item>
             </flux:sidebar.nav>

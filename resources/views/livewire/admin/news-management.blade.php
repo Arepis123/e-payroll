@@ -6,7 +6,7 @@
                 <p class="text-sm text-zinc-600 dark:text-zinc-400">Manage dashboard carousel news and announcements</p>
             </div>
             <flux:button wire:click="openCreateModal" variant="primary">
-                <flux:icon.plus class="size-4" />
+                <flux:icon.plus class="size-4 inline" />
                 Add News
             </flux:button>
         </div>
@@ -99,7 +99,7 @@
                             <tr>
                                 <td colspan="7" class="px-6 py-12 text-center">
                                     <div class="flex flex-col items-center gap-2">
-                                        <flux:icon.newspaper class="size-12 text-zinc-300 dark:text-zinc-600" />
+                                        <flux:icon.newspaper class="size-8 text-zinc-300 dark:text-zinc-600" />
                                         <p class="text-sm text-zinc-600 dark:text-zinc-400">No news items yet. Create your first one!</p>
                                     </div>
                                 </td>

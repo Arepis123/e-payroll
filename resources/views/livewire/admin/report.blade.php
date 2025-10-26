@@ -146,9 +146,9 @@
                 <div class="flex items-center gap-3">
                     <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Payment Summary by Client</h2>
                     <div class="min-w-[180px]">
-                        <flux:select wire:model.live="selectedMonth" wire:change="filterByMonthYear($event.target.value)">
+                        <flux:select wire:model.live="selectedMonth" wire:change="filterByMonthYear($event.target.value)" size="sm">
                             @foreach($availableMonths as $month)
-                                <flux:select.option value="{{ $month['value'] }}" @if($month['month'] == $selectedMonth && $month['year'] == $selectedYear) selected @endif>
+                                <flux:select.option value="{{ $month['value'] }}">
                                     {{ $month['label'] }}
                                 </flux:select.option>
                             @endforeach
@@ -221,9 +221,9 @@
                 <div class="flex items-center gap-3">
                     <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Top Paid Workers</h2>
                     <div class="min-w-[180px]">
-                        <flux:select wire:model.live="selectedMonth" wire:change="filterByMonthYear($event.target.value)">
+                        <flux:select wire:model.live="selectedMonth" wire:change="filterByMonthYear($event.target.value)" size="sm">
                             @foreach($availableMonths as $month)
-                                <flux:select.option value="{{ $month['value'] }}" @if($month['month'] == $selectedMonth && $month['year'] == $selectedYear) selected @endif>
+                                <flux:select.option value="{{ $month['value'] }}">
                                     {{ $month['label'] }}
                                 </flux:select.option>
                             @endforeach

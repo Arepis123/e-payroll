@@ -13,25 +13,26 @@
 
         <!-- Statistics Cards -->
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <!-- Total Clients -->
-            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Clients</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $stats['total_clients'] }}</p>
+            <!-- Clients Without Submission -->
+            <a href="{{ route('admin.missing-submissions') }}" wire:navigate>
+                <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg cursor-pointer transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">Pending Submissions</p>
+                            <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $stats['clients_without_submission'] }}</p>
+                        </div>
+                        <div class="rounded-full bg-orange-100 dark:bg-orange-900/30 p-3">
+                            <flux:icon.exclamation-triangle class="size-6 text-orange-600 dark:text-orange-400" />
+                        </div>
                     </div>
-                    <div class="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
-                        <flux:icon.building-office-2 class="size-6 text-blue-600 dark:text-blue-400" />
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="text-zinc-600 dark:text-zinc-400">{{ $stats['clients_with_submission_count'] }} of {{ $stats['total_clients'] }} submitted</span>
                     </div>
-                </div>
-                <div class="flex items-center gap-2 text-xs">
-                    <span class="text-green-600 dark:text-green-400">+{{ $stats['clients_growth'] }}</span>
-                    <span class="text-zinc-600 dark:text-zinc-400">from last month</span>
-                </div>
-            </flux:card>
+                </flux:card>
+            </a>
 
             <!-- Active Workers -->
-            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
+            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg cursor-pointer transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-lg">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Active Workers</p>
@@ -48,24 +49,26 @@
             </flux:card>
 
             <!-- This Month Payments -->
-            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-zinc-600 dark:text-zinc-400">This Month Payments</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($stats['this_month_payments']) }}</p>
+            <a href="{{ route('admin.salary') }}" wire:navigate>
+                <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg cursor-pointer transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">This Month Payments</p>
+                            <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($stats['this_month_payments']) }}</p>
+                        </div>
+                        <div class="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3">
+                            <flux:icon.wallet class="size-6 text-purple-600 dark:text-purple-400" />
+                        </div>
                     </div>
-                    <div class="rounded-full bg-purple-100 dark:bg-purple-900/30 p-3">
-                        <flux:icon.wallet class="size-6 text-purple-600 dark:text-purple-400" />
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="text-green-600 dark:text-green-400">+{{ $stats['payments_growth'] }}%</span>
+                        <span class="text-zinc-600 dark:text-zinc-400">from last month</span>
                     </div>
-                </div>
-                <div class="flex items-center gap-2 text-xs">
-                    <span class="text-green-600 dark:text-green-400">+{{ $stats['payments_growth'] }}%</span>
-                    <span class="text-zinc-600 dark:text-zinc-400">from last month</span>
-                </div>
-            </flux:card>
+                </flux:card>
+            </a>
 
             <!-- Outstanding Balance -->
-            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
+            <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg cursor-pointer transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-lg">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">Outstanding Balance</p>
