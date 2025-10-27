@@ -16,6 +16,8 @@ class PayrollSubmission extends Model
         'has_penalty',
         'penalty_amount',
         'total_amount',
+        'service_charge',
+        'grand_total',
         'total_with_penalty',
         'total_workers',
         'submitted_at',
@@ -27,6 +29,8 @@ class PayrollSubmission extends Model
         'has_penalty' => 'boolean',
         'penalty_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'service_charge' => 'decimal:2',
+        'grand_total' => 'decimal:2',
         'total_with_penalty' => 'decimal:2',
         'submitted_at' => 'datetime',
         'paid_at' => 'datetime',
@@ -121,6 +125,22 @@ class PayrollSubmission extends Model
     {
         return $query->where('payment_deadline', '<', now())
                     ->whereNotIn('status', ['paid']);
+    }
+
+    /**
+     * Calculate service charge (RM200 per worker)
+     */
+    public function calculateServiceCharge(): float
+    {
+        return $this->total_workers * 200;
+    }
+
+    /**
+     * Calculate grand total (total amount + service charge)
+     */
+    public function calculateGrandTotal(): float
+    {
+        return $this->total_amount + $this->calculateServiceCharge();
     }
 
     /**

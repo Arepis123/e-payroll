@@ -148,13 +148,13 @@ class PayrollWorker extends Model
         // Regular pay is the basic salary
         $this->regular_pay = $this->basic_salary;
 
-        // Gross salary = Basic + PREVIOUS month's OT + Advance Payment - Deduction
-        // Formula from CSV: Jumlah Gaji = Basic + Advance Payment - Deduction
+        // Gross salary = Basic + PREVIOUS month's OT - Advance Payment - Deduction
+        // Formula from CSV: Jumlah Gaji = Basic - Advance Payment - Deduction
         // Use transaction totals if available, otherwise use direct fields
         $totalAdvancePayment = $this->exists ? $this->total_advance_payment : ($this->advance_payment ?? 0);
         $totalDeduction = $this->exists ? $this->total_deduction : ($this->deduction ?? 0);
 
-        $this->gross_salary = $this->basic_salary + $previousMonthOtPay + $totalAdvancePayment - $totalDeduction;
+        $this->gross_salary = $this->basic_salary + $previousMonthOtPay - $totalAdvancePayment - $totalDeduction;
 
         // Employee deductions (calculated on gross salary including previous month OT)
         $this->epf_employee = $calculator->calculateWorkerEPF($this->gross_salary);

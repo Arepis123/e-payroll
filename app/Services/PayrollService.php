@@ -112,10 +112,16 @@ class PayrollService
             $totalAmount += $payrollWorker->total_payment;
         }
 
+        // Calculate service charge and grand total
+        $serviceCharge = count($workersData) * 200; // RM200 per worker
+        $grandTotal = $totalAmount + $serviceCharge;
+
         // Update submission totals
         $submission->update([
             'total_workers' => count($workersData),
             'total_amount' => $totalAmount,
+            'service_charge' => $serviceCharge,
+            'grand_total' => $grandTotal,
             'total_with_penalty' => $totalAmount,
         ]);
 
@@ -203,10 +209,16 @@ class PayrollService
             $totalAmount += $payrollWorker->total_payment;
         }
 
+        // Calculate service charge and grand total
+        $serviceCharge = count($workersData) * 200; // RM200 per worker
+        $grandTotal = $totalAmount + $serviceCharge;
+
         // Update submission totals
         $submission->update([
             'total_workers' => count($workersData),
             'total_amount' => $totalAmount,
+            'service_charge' => $serviceCharge,
+            'grand_total' => $grandTotal,
             'total_with_penalty' => $totalAmount,
         ]);
 

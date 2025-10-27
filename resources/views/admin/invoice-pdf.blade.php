@@ -128,7 +128,7 @@
             margin-bottom: 2px;
         }
         .advance-payment {
-            color: #28a745;
+            color: #f97316;
         }
         .deduction {
             color: #dc3545;
@@ -319,7 +319,7 @@
                                 <div class="advance-payment transaction-item">
                                     <strong>Advance:</strong>
                                     @foreach($advancePayments as $transaction)
-                                        <div>RM {{ number_format($transaction->amount, 2) }}</div>
+                                        <div>-RM {{ number_format($transaction->amount, 2) }}</div>
                                     @endforeach
                                 </div>
                             @endif
@@ -327,7 +327,7 @@
                                 <div class="deduction transaction-item">
                                     <strong>Deduction:</strong>
                                     @foreach($deductions as $transaction)
-                                        <div>RM {{ number_format($transaction->amount, 2) }}</div>
+                                        <div>-RM {{ number_format($transaction->amount, 2) }}</div>
                                     @endforeach
                                 </div>
                             @endif
@@ -380,6 +380,14 @@
                             <span class="total-label">TOTAL (RM):</span>
                             <span class="total-value">{{ number_format($invoice->total_amount, 2) }}</span>
                         </div>
+                        <div class="total-row">
+                            <span class="total-label">SERVICE CHARGE (RM):</span>
+                            <span class="total-value">+{{ number_format($invoice->service_charge, 2) }}</span>
+                        </div>
+                        <div class="total-row" style="font-weight: bold; font-size: 10px;">
+                            <span class="total-label">GRAND TOTAL (RM):</span>
+                            <span class="total-value">{{ number_format($invoice->grand_total, 2) }}</span>
+                        </div>
                         @if($invoice->has_penalty)
                         <div class="total-row" style="color: #dc3545;">
                             <span class="total-label">PENALTY 8% (RM):</span>
@@ -388,7 +396,7 @@
                         @endif
                         <div class="grand-total">
                             <span class="total-label">TOTAL DUE (RM):</span>
-                            <span class="total-value">{{ number_format($invoice->has_penalty ? $invoice->total_with_penalty : $invoice->total_amount, 2) }}</span>
+                            <span class="total-value">{{ number_format($invoice->has_penalty ? ($invoice->grand_total + $invoice->penalty_amount) : $invoice->grand_total, 2) }}</span>
                         </div>
                     </div>
                 </td>

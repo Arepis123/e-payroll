@@ -175,14 +175,14 @@
                                         <div class="text-xs text-zinc-600 dark:text-zinc-400">
                                             @if($advanceCount > 0)
                                                 <div class="flex items-center gap-1">
-                                                    <flux:icon.arrow-up class="size-3 text-green-600" />
-                                                    <span>{{ $advanceCount }} Advance (RM {{ number_format($totalAdvance, 2) }})</span>
+                                                    <flux:icon.arrow-down class="size-3 text-orange-600" />
+                                                    <span>{{ $advanceCount }} Advance (-RM {{ number_format($totalAdvance, 2) }})</span>
                                                 </div>
                                             @endif
                                             @if($deductionCount > 0)
                                                 <div class="flex items-center gap-1">
                                                     <flux:icon.arrow-down class="size-3 text-red-600" />
-                                                    <span>{{ $deductionCount }} Deduction (RM {{ number_format($totalDeduction, 2) }})</span>
+                                                    <span>{{ $deductionCount }} Deduction (-RM {{ number_format($totalDeduction, 2) }})</span>
                                                 </div>
                                             @endif
                                         </div>
@@ -278,12 +278,12 @@
                                 <div class="flex items-start justify-between p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg" wire:key="transaction-{{ $index }}-{{ $transaction['amount'] }}">
                                     <div class="flex-1">
                                         <div class="flex items-center gap-2">
-                                            <span class="font-semibold text-zinc-900 dark:text-zinc-100">RM {{ number_format($transaction['amount'], 2) }}</span>
+                                            <span class="font-semibold text-zinc-900 dark:text-zinc-100">-RM {{ number_format($transaction['amount'], 2) }}</span>
                                             @if($transaction['type'] === 'advance_payment')
-                                                <flux:badge color="green" size="sm">Advance Payment</flux:badge>
+                                                <flux:badge color="orange" size="sm">Advance Payment</flux:badge>
                                             @else
                                                 <flux:badge color="red" size="sm">Deduction</flux:badge>
-                                            @endif                                            
+                                            @endif
                                         </div>
                                         <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{{ $transaction['remarks'] }}</p>
                                     </div>
@@ -295,20 +295,26 @@
                         </div>
 
                         <!-- Summary -->
-                        <div class="mt-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+                        <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <h4 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Impact on Worker's Salary</h4>
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                    <p class="text-zinc-600 dark:text-zinc-400">Total Advance Payment:</p>
-                                    <p class="text-lg font-bold text-green-600 dark:text-green-400">
-                                        RM {{ number_format(collect($currentTransactions)->where('type', 'advance_payment')->sum('amount'), 2) }}
+                                    <p class="text-zinc-600 dark:text-zinc-400">Total Advance Payment (Deducted):</p>
+                                    <p class="text-lg font-bold text-orange-600 dark:text-orange-400">
+                                        -RM {{ number_format(collect($currentTransactions)->where('type', 'advance_payment')->sum('amount'), 2) }}
                                     </p>
                                 </div>
                                 <div>
                                     <p class="text-zinc-600 dark:text-zinc-400">Total Deduction:</p>
                                     <p class="text-lg font-bold text-red-600 dark:text-red-400">
-                                        RM {{ number_format(collect($currentTransactions)->where('type', 'deduction')->sum('amount'), 2) }}
+                                        -RM {{ number_format(collect($currentTransactions)->where('type', 'deduction')->sum('amount'), 2) }}
                                     </p>
                                 </div>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-red-200 dark:border-red-700">
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400">
+                                    <strong>Note:</strong> Both advance payments and deductions will be subtracted from the worker's basic salary.
+                                </p>
                             </div>
                         </div>
                     @else

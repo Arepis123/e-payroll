@@ -202,9 +202,9 @@ class PaymentCalculatorService
         );
 
         // Total calculations
-        // Formula: Jumlah Gaji = Basic + OT + Advance Payment - Deduction
-        $totalGrossPay = $basicSalary + $overtimePay + $advancePayment - $deduction;
-        $totalNetPay = $netBasicSalary + $overtimePay + $advancePayment - $deduction;
+        // Formula: Jumlah Gaji = Basic + OT - Advance Payment - Deduction
+        $totalGrossPay = $basicSalary + $overtimePay - $advancePayment - $deduction;
+        $totalNetPay = $netBasicSalary + $overtimePay - $advancePayment - $deduction;
         $totalPaymentToCLAB = $basicSalary + $totalEmployerContributions + $overtimePay;
 
         return [

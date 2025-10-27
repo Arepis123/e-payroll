@@ -166,10 +166,10 @@
                                     <div class="space-y-1">
                                         @if($advancePayments->count() > 0)
                                             <div class="text-xs text-right">
-                                                <span class="font-medium text-green-600 dark:text-green-400">Advance Payment:</span>
+                                                <span class="font-medium text-orange-600 dark:text-orange-400">Advance Payment:</span>
                                                 @foreach($advancePayments as $transaction)
                                                     <div class="ml-2 text-zinc-600 dark:text-zinc-400">
-                                                        • RM {{ number_format($transaction->amount, 2) }}
+                                                        • -RM {{ number_format($transaction->amount, 2) }}
                                                         <span class="text-xs italic">({{ $transaction->remarks }})</span>
                                                     </div>
                                                 @endforeach
@@ -180,7 +180,7 @@
                                                 <span class="font-medium text-red-600 dark:text-red-400">Deduction:</span>
                                                 @foreach($deductions as $transaction)
                                                     <div class="ml-2 text-zinc-600 dark:text-zinc-400">
-                                                        • RM {{ number_format($transaction->amount, 2) }}
+                                                        • -RM {{ number_format($transaction->amount, 2) }}
                                                         <span class="text-xs italic">({{ $transaction->remarks }})</span>
                                                     </div>
                                                 @endforeach
@@ -212,11 +212,27 @@
                     </tbody>
                     <tfoot>
                         <tr class="border-t-2 border-zinc-300 dark:border-zinc-600">
-                            <td colspan="9" class="py-4 text-right text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                            <td colspan="9" class="py-3 text-right text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                                 Total Amount:
                             </td>
-                            <td class="py-4 text-right text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                            <td class="py-3 text-right text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                                 RM {{ number_format($invoice->total_amount, 2) }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="9" class="py-2 text-right text-sm text-zinc-900 dark:text-zinc-100">
+                                Service Charge (RM200 × {{ $invoice->total_workers }} workers):
+                            </td>
+                            <td class="py-2 text-right text-sm text-zinc-900 dark:text-zinc-100">
+                                +RM {{ number_format($invoice->service_charge, 2) }}
+                            </td>
+                        </tr>
+                        <tr class="border-t border-zinc-200 dark:border-zinc-700">
+                            <td colspan="9" class="py-3 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
+                                Grand Total:
+                            </td>
+                            <td class="py-3 text-right text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                                RM {{ number_format($invoice->grand_total, 2) }}
                             </td>
                         </tr>
                         @if($invoice->has_penalty)
@@ -228,21 +244,21 @@
                                 +RM {{ number_format($invoice->penalty_amount, 2) }}
                             </td>
                         </tr>
-                        <tr>
-                            <td colspan="9" class="py-2 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
+                        <tr class="border-t-2 border-zinc-300 dark:border-zinc-600">
+                            <td colspan="9" class="py-3 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
                                 Total Amount Due:
                             </td>
-                            <td class="py-2 text-right text-xl font-bold text-red-600 dark:text-red-400">
-                                RM {{ number_format($invoice->total_with_penalty, 2) }}
+                            <td class="py-3 text-right text-xl font-bold text-red-600 dark:text-red-400">
+                                RM {{ number_format($invoice->grand_total + $invoice->penalty_amount, 2) }}
                             </td>
                         </tr>
                         @else
-                        <tr>
-                            <td colspan="9" class="py-2 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
+                        <tr class="border-t-2 border-zinc-300 dark:border-zinc-600">
+                            <td colspan="9" class="py-3 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
                                 Total Amount Due:
                             </td>
-                            <td class="py-2 text-right text-xl font-bold text-zinc-900 dark:text-zinc-100">
-                                RM {{ number_format($invoice->total_amount, 2) }}
+                            <td class="py-3 text-right text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                                RM {{ number_format($invoice->grand_total, 2) }}
                             </td>
                         </tr>
                         @endif
