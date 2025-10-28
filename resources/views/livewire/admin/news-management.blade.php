@@ -11,16 +11,6 @@
             </flux:button>
         </div>
 
-        <!-- Success Message -->
-        @if (session()->has('message'))
-            <flux:card class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
-                <div class="flex items-center gap-3">
-                    <flux:icon.check-circle class="size-5 text-green-600 dark:text-green-400" />
-                    <p class="text-sm text-green-900 dark:text-green-100">{{ session('message') }}</p>
-                </div>
-            </flux:card>
-        @endif
-
         <!-- News Table -->
         <flux:card class="p-0 dark:bg-zinc-900 rounded-lg overflow-hidden">
             <div class="overflow-x-auto">

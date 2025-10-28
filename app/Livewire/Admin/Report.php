@@ -6,6 +6,7 @@ use App\Models\PayrollSubmission;
 use App\Models\PayrollPayment;
 use App\Models\PayrollWorker;
 use App\Models\User;
+use Flux\Flux;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
@@ -305,7 +306,7 @@ class Report extends Component
     public function applyFilters()
     {
         // TODO: Implement filter logic
-        session()->flash('success', 'Filters applied successfully!');
+        Flux::toast(variant: 'success', text: 'Filters applied successfully!');
     }
 
     public function render()

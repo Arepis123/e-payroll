@@ -22,8 +22,8 @@
         <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Amount</p>
-                    <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($stats['total_amount'] ?? 0, 2) }}</p>
+                    <p class="text-sm text-zinc-600 dark:text-zinc-400">Grand Total (incl. Service & SST)</p>
+                    <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">RM {{ number_format($stats['grand_total'] ?? 0, 2) }}</p>
                 </div>
                 <flux:icon.wallet class="size-8 text-purple-600 dark:text-purple-400" />
             </div>
@@ -118,7 +118,7 @@
                 <flux:table.column sortable :sorted="$sortBy === 'contractor_clab_no'" :direction="$sortDirection" wire:click="sortByColumn('contractor_clab_no')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Contractor</span></flux:table.column>
                 <flux:table.column sortable :sorted="$sortBy === 'total_workers'" :direction="$sortDirection" wire:click="sortByColumn('total_workers')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Workers</span></flux:table.column>
                 <flux:table.column sortable :sorted="$sortBy === 'month'" :direction="$sortDirection" wire:click="sortByColumn('month')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Period</span></flux:table.column>
-                <flux:table.column sortable :sorted="$sortBy === 'total_amount'" :direction="$sortDirection" wire:click="sortByColumn('total_amount')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Amount</span></flux:table.column>
+                <flux:table.column sortable :sorted="$sortBy === 'grand_total'" :direction="$sortDirection" wire:click="sortByColumn('grand_total')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Grand Total</span></flux:table.column>
                 <flux:table.column sortable :sorted="$sortBy === 'status'" :direction="$sortDirection" wire:click="sortByColumn('status')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</span></flux:table.column>
                 <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Payment</span></flux:table.column>
                 <flux:table.column sortable :sorted="$sortBy === 'submitted_at'" :direction="$sortDirection" wire:click="sortByColumn('submitted_at')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Submitted</span></flux:table.column>
@@ -147,7 +147,14 @@
                         </flux:table.cell>
 
                         <flux:table.cell variant="strong">
-                            RM {{ number_format($submission->total_amount, 2) }}
+                            <div class="text-xs text-zinc-600 dark:text-zinc-400">
+                                Total: RM {{ number_format($submission->total_amount, 2) }}<br>
+                                + Service: RM {{ number_format($submission->service_charge, 2) }}<br>
+                                + SST: RM {{ number_format($submission->sst, 2) }}
+                            </div>
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                                RM {{ number_format($submission->grand_total, 2) }}
+                            </div>
                         </flux:table.cell>
 
                         <flux:table.cell>

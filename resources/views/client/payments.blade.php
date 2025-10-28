@@ -172,7 +172,7 @@
                         @empty
                         <tr>
                             <td colspan="8" class="py-8 text-center text-zinc-600 dark:text-zinc-400">
-                                No payment records found for {{ $selectedYear }}.
+                                No payment records found for {{ $selectedYear }}
                             </td>
                         </tr>
                         @endforelse

@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\PayrollSubmission;
 use App\Models\PayrollPayment;
+use Flux\Flux;
 use Livewire\Component;
 use Livewire\Attributes\Url;
 
@@ -57,7 +58,7 @@ class Salary extends Component
     public function export()
     {
         // TODO: Implement export functionality
-        session()->flash('success', 'Export functionality coming soon!');
+        Flux::toast(variant: 'success', text: 'Export functionality coming soon!');
     }
 
     public function resetPage()
@@ -104,10 +105,10 @@ class Salary extends Component
             ->whereMonth('created_at', $currentMonth)
             ->count();
 
-        // Total amount this month
-        $totalAmount = PayrollSubmission::whereYear('created_at', $currentYear)
+        // Grand total this month (including service charge and SST)
+        $grandTotal = PayrollSubmission::whereYear('created_at', $currentYear)
             ->whereMonth('created_at', $currentMonth)
-            ->sum('total_amount');
+            ->sum('grand_total');
 
         // Completed submissions (paid)
         $completed = PayrollSubmission::whereYear('created_at', $currentYear)
@@ -123,7 +124,7 @@ class Salary extends Component
 
         $this->stats = [
             'total_submissions' => $totalSubmissions,
-            'total_amount' => $totalAmount,
+            'grand_total' => $grandTotal,
             'completed' => $completed,
             'pending' => $pending,
         ];

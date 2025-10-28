@@ -6,12 +6,6 @@
         </div>
     </div>
 
-    @if (session()->has('success'))
-        <flux:card class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
-            <p class="text-green-800 dark:text-green-200">{{ session('success') }}</p>
-        </flux:card>
-    @endif
-
     <!-- Stats Cards -->
     <div class="grid gap-4 md:grid-cols-4">
         <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
@@ -100,6 +94,7 @@
                         <tr class="border-b border-zinc-200 dark:border-zinc-700">
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Name</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Type</th>
+                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Trigger</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Actions</th>
                         </tr>
@@ -113,6 +108,29 @@
                                 </td>
                                 <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
                                     <flux:badge color="blue" size="sm">{{ ucfirst($template->type) }}</flux:badge>
+                                </td>
+                                <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
+                                    @if($template->trigger_type === 'auto_payment_deadline')
+                                        <flux:badge color="purple" size="sm">
+                                            <flux:icon.clock variant="solid" class="size-4 me-1"/>
+                                            Auto ({{ $template->trigger_days_before }} days)
+                                        </flux:badge>
+                                    @elseif($template->trigger_type === 'auto_overdue')
+                                        <flux:badge color="red" size="sm">
+                                            <flux:icon.clock variant="micro"  class="size-4 me-1"/>
+                                            Auto (Overdue)
+                                        </flux:badge>
+                                    @elseif($template->trigger_type === 'auto_submission_deadline')
+                                        <flux:badge color="orange" size="sm">
+                                            <flux:icon.clock variant="micro"  class="size-4 me-1"/>
+                                            Auto (Submission)
+                                        </flux:badge>
+                                    @else
+                                        <flux:badge color="zinc" size="sm">
+                                            <flux:icon.hand-raised variant="micro"  class="size-4 me-1"/>
+                                            Manual
+                                        </flux:badge>
+                                    @endif
                                 </td>
                                 <td class="py-3">
                                     <button wire:click="toggleTemplateStatus({{ $template->id }})">
@@ -140,7 +158,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="py-8 text-center text-sm text-zinc-500">
+                                <td colspan="5" class="py-8 text-center text-sm text-zinc-500">
                                     No templates found. Create your first template to get started.
                                 </td>
                             </tr>
@@ -154,13 +172,19 @@
     @if($activeTab === 'send')
         <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
             <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Send Notification</h2>
+            <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                <flux:icon.information-circle variant="micro" class="inline" />
+                Only manual templates are shown here. Automatic templates are sent by the system scheduler.
+            </p>
             <div class="space-y-4">
                 <div>
                     <flux:select wire:model="selectedTemplateId" variant="listbox" label="Select Template" size="sm">
                         <flux:select.option value="">Choose a template...</flux:select.option>
-                        @foreach($templates->where('is_active', true) as $template)
+                        @forelse($manualTemplates->where('is_active', true) as $template)
                             <flux:select.option value="{{ $template->id }}">{{ $template->name }}</flux:select.option>
-                        @endforeach
+                        @empty
+                            <flux:select.option value="" disabled>No manual templates available</flux:select.option>
+                        @endforelse
                     </flux:select>
                 </div>
 
@@ -217,7 +241,7 @@
                     @enderror
                 </div>
 
-                <flux:button wire:click="sendNotification" variant="primary" class="w-full" icon="paper-airplane" icon-variant="outline">
+                <flux:button wire:click="sendNotification" variant="primary" class="mt-2" icon="paper-airplane" icon-variant="outline">
                     Send Notification
                 </flux:button>
             </div>

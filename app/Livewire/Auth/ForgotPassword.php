@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use Flux\Flux;
 use Illuminate\Support\Facades\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -22,6 +23,6 @@ class ForgotPassword extends Component
 
         Password::sendResetLink($this->only('email'));
 
-        session()->flash('status', __('A reset link will be sent if the account exists.'));
+        Flux::toast(variant: 'success', text: __('A reset link will be sent if the account exists.'));
     }
 }

@@ -17,6 +17,7 @@ class PayrollSubmission extends Model
         'penalty_amount',
         'total_amount',
         'service_charge',
+        'sst',
         'grand_total',
         'total_with_penalty',
         'total_workers',
@@ -30,6 +31,7 @@ class PayrollSubmission extends Model
         'penalty_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'service_charge' => 'decimal:2',
+        'sst' => 'decimal:2',
         'grand_total' => 'decimal:2',
         'total_with_penalty' => 'decimal:2',
         'submitted_at' => 'datetime',
@@ -136,11 +138,19 @@ class PayrollSubmission extends Model
     }
 
     /**
-     * Calculate grand total (total amount + service charge)
+     * Calculate SST (8% of service charge)
+     */
+    public function calculateSST(): float
+    {
+        return $this->calculateServiceCharge() * 0.08;
+    }
+
+    /**
+     * Calculate grand total (total amount + service charge + SST)
      */
     public function calculateGrandTotal(): float
     {
-        return $this->total_amount + $this->calculateServiceCharge();
+        return $this->total_amount + $this->calculateServiceCharge() + $this->calculateSST();
     }
 
     /**

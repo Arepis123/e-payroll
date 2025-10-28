@@ -41,8 +41,11 @@ class NotificationEmail extends Mailable
      */
     public function content(): Content
     {
+        // Convert line breaks to HTML
+        $formattedBody = nl2br(e($this->emailBody));
+
         return new Content(
-            htmlString: $this->emailBody,
+            htmlString: $formattedBody,
         );
     }
 
@@ -54,10 +57,27 @@ class NotificationEmail extends Mailable
     public function attachments(): array
     {
         $attachments = [];
+        $disk = \Storage::disk('local');
 
-        foreach ($this->emailAttachments as $filePath) {
-            if (file_exists(storage_path('app/' . $filePath))) {
-                $attachments[] = \Illuminate\Mail\Mailables\Attachment::fromPath(storage_path('app/' . $filePath));
+        foreach ($this->emailAttachments as $attachment) {
+            // Handle both old format (string) and new format (array with path and original_name)
+            $filePath = is_array($attachment) ? $attachment['path'] : $attachment;
+            $originalName = is_array($attachment) ? $attachment['original_name'] : null;
+
+            // Use Laravel Storage to get the correct path
+            $fullPath = $disk->path($filePath);
+
+            if ($disk->exists($filePath)) {
+                $mailAttachment = \Illuminate\Mail\Mailables\Attachment::fromPath($fullPath);
+
+                // Use original filename if available
+                if ($originalName) {
+                    $mailAttachment->as($originalName);
+                }
+
+                $attachments[] = $mailAttachment;
+            } else {
+                \Log::warning('Attachment file not found', ['path' => $fullPath]);
             }
         }
 

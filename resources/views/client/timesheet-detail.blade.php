@@ -212,11 +212,19 @@
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="9" class="py-2 text-right text-sm text-zinc-600 dark:text-zinc-400">
-                                Service Charge (RM200 × {{ $submission->total_workers }} workers):
+                            <td colspan="9" class="py-1 text-right text-sm text-zinc-900 dark:text-zinc-300">
+                                Service Charge (RM200 × {{ $submission->total_workers }} {{ Str::plural('worker', $submission->total_workers) }}):
                             </td>
-                            <td class="py-2 text-right text-sm text-zinc-600 dark:text-zinc-400">
+                            <td class="py-1 text-right text-sm text-zinc-900 dark:text-zinc-300">
                                 +RM {{ number_format($submission->service_charge, 2) }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="9" class="py-1 text-right text-sm text-zinc-900 dark:text-zinc-300">
+                                SST 8%:
+                            </td>
+                            <td class="py-1 text-right text-sm text-zinc-900 dark:text-zinc-300">
+                                +RM {{ number_format($submission->sst, 2) }}
                             </td>
                         </tr>
                         <tr class="border-t border-zinc-200 dark:border-zinc-700">
@@ -240,7 +248,7 @@
                             <td colspan="9" class="py-3 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
                                 Total Amount Due:
                             </td>
-                            <td class="py-3 text-right text-xl font-bold text-red-600 dark:text-red-400">
+                            <td class="py-3 text-right text-base font-bold text-red-600 dark:text-red-400">
                                 RM {{ number_format($submission->grand_total + $submission->penalty_amount, 2) }}
                             </td>
                         </tr>

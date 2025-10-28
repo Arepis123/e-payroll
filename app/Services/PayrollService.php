@@ -112,15 +112,17 @@ class PayrollService
             $totalAmount += $payrollWorker->total_payment;
         }
 
-        // Calculate service charge and grand total
+        // Calculate service charge, SST, and grand total
         $serviceCharge = count($workersData) * 200; // RM200 per worker
-        $grandTotal = $totalAmount + $serviceCharge;
+        $sst = $serviceCharge * 0.08; // 8% SST on service charge
+        $grandTotal = $totalAmount + $serviceCharge + $sst;
 
         // Update submission totals
         $submission->update([
             'total_workers' => count($workersData),
             'total_amount' => $totalAmount,
             'service_charge' => $serviceCharge,
+            'sst' => $sst,
             'grand_total' => $grandTotal,
             'total_with_penalty' => $totalAmount,
         ]);
@@ -209,15 +211,17 @@ class PayrollService
             $totalAmount += $payrollWorker->total_payment;
         }
 
-        // Calculate service charge and grand total
+        // Calculate service charge, SST, and grand total
         $serviceCharge = count($workersData) * 200; // RM200 per worker
-        $grandTotal = $totalAmount + $serviceCharge;
+        $sst = $serviceCharge * 0.08; // 8% SST on service charge
+        $grandTotal = $totalAmount + $serviceCharge + $sst;
 
         // Update submission totals
         $submission->update([
             'total_workers' => count($workersData),
             'total_amount' => $totalAmount,
             'service_charge' => $serviceCharge,
+            'sst' => $sst,
             'grand_total' => $grandTotal,
             'total_with_penalty' => $totalAmount,
         ]);

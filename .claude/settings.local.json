@@ -17,7 +17,9 @@
       "Bash(del \"C:\\xampp\\htdocs\\e-payroll\\resources\\views\\client\\timesheet-edit.blade.php\")",
       "Bash(dir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\payroll.jpg\")",
       "Bash(where:*)",
-      "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\resources\\views\\emails\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\resources\\views\\emails\")"
+      "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\resources\\views\\emails\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\resources\\views\\emails\")",
+      "Bash(Get-Content \"C:\\xampp\\htdocs\\e-payroll\\storage\\logs\\laravel.log\" -Tail 100)",
+      "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\storage\\app\\notifications\\attachments\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\storage\\app\\notifications\\attachments\")"
     ],
     "deny": [],
     "ask": []

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\ContractWorker;
 use App\Models\Contractor;
 use App\Mail\PayrollReminderMail;
+use Flux\Flux;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 
@@ -61,13 +62,13 @@ class MissingSubmissions extends Component
     {
         // Validate
         if (!$this->selectedContractor || empty($this->reminderMessage)) {
-            session()->flash('error', 'Cannot send reminder without a message.');
+            Flux::toast(variant: 'danger', text: 'Cannot send reminder without a message.');
             return;
         }
 
         // Validate email exists
         if (empty($this->selectedContractor['email'])) {
-            session()->flash('error', 'Cannot send reminder: No email address found for this contractor.');
+            Flux::toast(variant: 'danger', text: 'Cannot send reminder: No email address found for this contractor.');
             return;
         }
 
@@ -95,9 +96,13 @@ class MissingSubmissions extends Component
                 'sent_by' => auth()->user()->name ?? 'System',
             ]);
 
-            session()->flash('success', "Reminder email sent successfully to {$this->selectedContractor['name']} ({$this->selectedContractor['email']})!");
+            Flux::toast(
+                variant: 'success',
+                heading: 'Reminder sent!',
+                text: "Email sent to {$this->selectedContractor['name']} ({$this->selectedContractor['email']})"
+            );
         } catch (\Exception $e) {
-            session()->flash('error', 'Failed to send reminder: ' . $e->getMessage());
+            Flux::toast(variant: 'danger', heading: 'Failed to send', text: $e->getMessage());
         }
 
         $this->closeRemindModal();

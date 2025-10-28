@@ -389,7 +389,11 @@
                         </div>
                         <div class="total-row">
                             <span class="total-label">SERVICE CHARGE (RM):</span>
-                            <span class="total-value">+{{ number_format($invoice->service_charge, 2) }}</span>
+                            <span class="total-value">{{ number_format($invoice->service_charge, 2) }}</span>
+                        </div>
+                        <div class="total-row">
+                            <span class="total-label">SST 8% (RM):</span>
+                            <span class="total-value">{{ number_format($invoice->sst, 2) }}</span>
                         </div>
                         <div class="total-row" style="font-weight: bold; font-size: 10px;">
                             <span class="total-label">GRAND TOTAL (RM):</span>

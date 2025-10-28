@@ -161,7 +161,7 @@
                 <flux:table.column sortable :sorted="$sortBy === 'contractor'" :direction="$sortDirection" wire:click="sortByColumn('contractor')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Contractor</span></flux:table.column>
                 <flux:table.column sortable :sorted="$sortBy === 'period'" :direction="$sortDirection" wire:click="sortByColumn('period')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Period</span></flux:table.column>
                 <flux:table.column sortable :sorted="$sortBy === 'workers'" :direction="$sortDirection" wire:click="sortByColumn('workers')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Workers</span></flux:table.column>
-                <flux:table.column sortable :sorted="$sortBy === 'amount'" :direction="$sortDirection" wire:click="sortByColumn('amount')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Amount</span></flux:table.column>
+                <flux:table.column sortable :sorted="$sortBy === 'grand_total'" :direction="$sortDirection" wire:click="sortByColumn('grand_total')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Grand Total</span></flux:table.column>
                 <flux:table.column sortable :sorted="$sortBy === 'issue_date'" :direction="$sortDirection" wire:click="sortByColumn('issue_date')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Issue Date</span></flux:table.column>
                 <flux:table.column sortable :sorted="$sortBy === 'due_date'" :direction="$sortDirection" wire:click="sortByColumn('due_date')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Due Date</span></flux:table.column>
                 <flux:table.column sortable :sorted="$sortBy === 'status'" :direction="$sortDirection" wire:click="sortByColumn('status')"><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</span></flux:table.column>
@@ -189,10 +189,16 @@
                         <flux:table.cell variant="strong">{{ $invoice->total_workers }}</flux:table.cell>
 
                         <flux:table.cell variant="strong">
-                            RM {{ number_format($invoice->total_amount, 2) }}
+                            <div class="text-xs text-zinc-600 dark:text-zinc-400">
+                                Total: RM {{ number_format($invoice->total_amount, 2) }}<br>
+                                + Service & SST: RM {{ number_format($invoice->service_charge + $invoice->sst, 2) }}
+                            </div>
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                                RM {{ number_format($invoice->grand_total, 2) }}
+                            </div>
                             @if($invoice->has_penalty)
                                 <span class="text-xs text-red-600 dark:text-red-400">
-                                    (+RM {{ number_format($invoice->penalty_amount, 2) }})
+                                    (+RM {{ number_format($invoice->penalty_amount, 2) }} penalty)
                                 </span>
                             @endif
                         </flux:table.cell>

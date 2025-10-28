@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\News;
+use Flux\Flux;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Validate;
@@ -114,7 +115,7 @@ class NewsManagement extends Component
 
         if ($this->modalMode === 'create') {
             News::create($data);
-            session()->flash('message', 'News created successfully.');
+            Flux::toast(variant: 'success', text: 'News created successfully.');
         } else {
             $news = News::findOrFail($this->newsId);
 
@@ -124,7 +125,7 @@ class NewsManagement extends Component
             }
 
             $news->update($data);
-            session()->flash('message', 'News updated successfully.');
+            Flux::toast(variant: 'success', text: 'News updated successfully.');
         }
 
         $this->closeModal();
@@ -134,7 +135,7 @@ class NewsManagement extends Component
     public function delete($id)
     {
         News::findOrFail($id)->delete();
-        session()->flash('message', 'News deleted successfully.');
+        Flux::toast(variant: 'success', text: 'News deleted successfully.');
         $this->loadNews();
     }
 
