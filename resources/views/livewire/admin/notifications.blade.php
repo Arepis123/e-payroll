@@ -112,22 +112,22 @@
                                 <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
                                     @if($template->trigger_type === 'auto_payment_deadline')
                                         <flux:badge color="purple" size="sm">
-                                            <flux:icon.clock variant="solid" class="size-4 me-1"/>
+                                            <flux:icon.clock variant="outline" class="size-4 me-1"/>
                                             Auto ({{ $template->trigger_days_before }} days)
                                         </flux:badge>
                                     @elseif($template->trigger_type === 'auto_overdue')
                                         <flux:badge color="red" size="sm">
-                                            <flux:icon.clock variant="micro"  class="size-4 me-1"/>
+                                            <flux:icon.clock variant="outline"  class="size-4 me-1"/>
                                             Auto (Overdue)
                                         </flux:badge>
                                     @elseif($template->trigger_type === 'auto_submission_deadline')
                                         <flux:badge color="orange" size="sm">
-                                            <flux:icon.clock variant="micro"  class="size-4 me-1"/>
+                                            <flux:icon.clock variant="outline"  class="size-4 me-1"/>
                                             Auto (Submission)
                                         </flux:badge>
                                     @else
                                         <flux:badge color="zinc" size="sm">
-                                            <flux:icon.hand-raised variant="micro"  class="size-4 me-1"/>
+                                            <flux:icon.hand-raised variant="outline"  class="size-4 me-1"/>
                                             Manual
                                         </flux:badge>
                                     @endif
@@ -344,7 +344,7 @@
     @endif
 
     <!-- Template Modal -->
-    <flux:modal name="template-modal" variant="flyout" class="space-y-6">
+    <flux:modal name="template-modal" variant="default" class="space-y-6 w-full">
         <div>
             <flux:heading size="lg">{{ $editingTemplateId ? 'Edit' : 'Create' }} Template</flux:heading>
         </div>
@@ -365,7 +365,7 @@
 
         <div>
             <flux:label>Body</flux:label>
-            <flux:textarea wire:model="templateForm.body" rows="6" placeholder="Use @{{client_name}} for variables" />
+            <flux:textarea wire:model="templateForm.body" rows="10" placeholder="Use @{{client_name}} for variables" />
             <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                 Available variables: @{{client_name}}, @{{message}}
             </p>

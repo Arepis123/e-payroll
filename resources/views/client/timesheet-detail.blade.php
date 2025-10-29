@@ -59,12 +59,21 @@
                 <div>
                     <p class="text-sm text-zinc-600 dark:text-zinc-400">Total Amount</p>
                     <p class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">RM {{ number_format($submission->total_amount, 2) }}</p>
+                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1 hidden">
+                        + Service Charge: RM {{ number_format($submission->service_charge, 2) }}
+                    </p>
+                    <p class="text-xs text-zinc-600 dark:text-zinc-400 hidden">
+                        + SST 8%: RM {{ number_format($submission->sst, 2) }}
+                    </p>
+                    <p class="text-sm font-bold text-zinc-900 dark:text-zinc-100 mt-1 hidden">
+                        Grand Total: RM {{ number_format($submission->grand_total, 2) }}
+                    </p>
                     @if($submission->has_penalty)
-                        <p class="text-xs text-red-600 dark:text-red-400 mt-1">
-                            + Penalty: RM {{ number_format($submission->penalty_amount, 2) }}
+                        <p class="text-xs text-red-600 dark:text-red-400 mt-2 hidden">
+                            + Late Penalty: RM {{ number_format($submission->penalty_amount, 2) }}
                         </p>
-                        <p class="text-sm font-bold text-red-600 dark:text-red-400">
-                            Total with penalty: RM {{ number_format($submission->total_with_penalty, 2) }}
+                        <p class="text-sm font-bold text-red-600 dark:text-red-400 hidden">
+                            Total Due: RM {{ number_format($submission->total_with_penalty, 2) }}
                         </p>
                     @endif
                 </div>
@@ -77,7 +86,7 @@
                         @csrf
                         <flux:button type="submit" variant="primary" >
                             <flux:icon.credit-card class="size-5 inline me-1" />
-                            Pay Now - RM {{ number_format($submission->has_penalty ? $submission->total_with_penalty : $submission->total_amount, 2) }}
+                            Pay Now - RM {{ number_format($submission->total_with_penalty, 2) }}
                         </flux:button>
                     </form>
                 </div>
@@ -101,6 +110,109 @@
             @endif
         </flux:card>
 
+        <!-- OT Payment Flow Information -->
+        <div class="grid gap-4 md:grid-cols-2">
+            <!-- Previous Month OT (Paid This Month) -->
+            <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
+                <div class="flex items-start gap-3">
+                    <flux:icon.check-circle class="size-6 text-green-600 dark:text-green-400 mt-0.5" />
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Previous Month OT (Included in This Payment)</h3>
+                        @if($previousSubmission)
+                            <div class="space-y-2 text-sm">
+                                <p class="text-zinc-600 dark:text-zinc-400">
+                                    OT from <span class="font-medium text-green-600 dark:text-green-400">{{ $previousSubmission->month_year }}</span> is included in this month's payment
+                                </p>
+                                <div class="grid grid-cols-2 gap-2 mt-3">
+                                    <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                                        <p class="text-xs text-zinc-600 dark:text-zinc-400">Total Hours</p>
+                                        <p class="text-xl font-bold text-green-600 dark:text-green-400">{{ number_format($previousOtStats['total_ot_hours'], 2) }}h</p>
+                                    </div>
+                                    <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                                        <p class="text-xs text-zinc-600 dark:text-zinc-400">Total Amount</p>
+                                        <p class="text-xl font-bold text-green-600 dark:text-green-400">RM {{ number_format($previousOtStats['total_ot_pay'], 2) }}</p>
+                                    </div>
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-green-200 dark:border-green-800">
+                                    <p class="text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">Breakdown:</p>
+                                    <div class="space-y-1 text-xs">
+                                        <div class="flex justify-between">
+                                            <span class="text-zinc-600 dark:text-zinc-400">Weekday OT (1.5x):</span>
+                                            <span class="font-medium text-green-600 dark:text-green-400">{{ number_format($previousOtStats['total_weekday_ot_hours'], 2) }}h | RM {{ number_format($previousOtStats['total_weekday_ot_pay'], 2) }}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-zinc-600 dark:text-zinc-400">Rest Day OT (2.0x):</span>
+                                            <span class="font-medium text-green-600 dark:text-green-400">{{ number_format($previousOtStats['total_rest_ot_hours'], 2) }}h | RM {{ number_format($previousOtStats['total_rest_ot_pay'], 2) }}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-zinc-600 dark:text-zinc-400">Public Holiday OT (3.0x):</span>
+                                            <span class="font-medium text-green-600 dark:text-green-400">{{ number_format($previousOtStats['total_public_ot_hours'], 2) }}h | RM {{ number_format($previousOtStats['total_public_ot_pay'], 2) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">No previous month OT data. This is likely your first submission.</p>
+                        @endif
+                    </div>
+                </div>
+            </flux:card>
+
+            <!-- Current Month OT (To be Paid Next Month) -->
+            <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
+                <div class="flex items-start gap-3">
+                    <flux:icon.clock class="size-6 text-orange-600 dark:text-orange-400 mt-0.5" />
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Current Month OT (To be Paid Next Month)</h3>
+                        @php
+                            $currentOtHours = $submission->workers->sum(function ($worker) {
+                                return $worker->ot_normal_hours + $worker->ot_rest_hours + $worker->ot_public_hours;
+                            });
+                            $currentOtPay = $submission->workers->sum('total_ot_pay');
+                            $currentWeekdayOtHours = $submission->workers->sum('ot_normal_hours');
+                            $currentWeekdayOtPay = $submission->workers->sum('ot_normal_pay');
+                            $currentRestOtHours = $submission->workers->sum('ot_rest_hours');
+                            $currentRestOtPay = $submission->workers->sum('ot_rest_pay');
+                            $currentPublicOtHours = $submission->workers->sum('ot_public_hours');
+                            $currentPublicOtPay = $submission->workers->sum('ot_public_pay');
+                        @endphp
+                        <div class="space-y-2 text-sm">
+                            <p class="text-zinc-600 dark:text-zinc-400">
+                                OT from <span class="font-medium text-orange-600 dark:text-orange-400">{{ $submission->month_year }}</span> will be charged next month
+                            </p>
+                            <div class="grid grid-cols-2 gap-2 mt-3">
+                                <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded">
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">Total Hours</p>
+                                    <p class="text-xl font-bold text-orange-600 dark:text-orange-400">{{ number_format($currentOtHours, 2) }}h</p>
+                                </div>
+                                <div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded">
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400">Total Amount</p>
+                                    <p class="text-xl font-bold text-orange-600 dark:text-orange-400">RM {{ number_format($currentOtPay, 2) }}</p>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-orange-200 dark:border-orange-800">
+                                <p class="text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">Breakdown:</p>
+                                <div class="space-y-1 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-zinc-600 dark:text-zinc-400">Weekday OT (1.5x):</span>
+                                        <span class="font-medium text-zinc-600 dark:text-zinc-400">{{ number_format($currentWeekdayOtHours, 2) }}h | RM {{ number_format($currentWeekdayOtPay, 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-zinc-600 dark:text-zinc-400">Rest Day OT (2.0x):</span>
+                                        <span class="font-medium text-zinc-600 dark:text-zinc-400">{{ number_format($currentRestOtHours, 2) }}h | RM {{ number_format($currentRestOtPay, 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-zinc-600 dark:text-zinc-400">Public Holiday OT (3.0x):</span>
+                                        <span class="font-medium text-zinc-600 dark:text-zinc-400">{{ number_format($currentPublicOtHours, 2) }}h | RM {{ number_format($currentPublicOtPay, 2) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </flux:card>
+        </div>
+
         <!-- Workers Details -->
         <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
             <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Worker Breakdown</h2>
@@ -111,9 +223,9 @@
                         <tr class="border-b border-zinc-200 dark:border-zinc-700">
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Worker</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Basic Salary</th>
-                            <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Normal</th>
-                            <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Rest</th>
-                            <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Public</th>
+                            <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Normal<br><span class="text-xs">(Deferred)</span></th>
+                            <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Rest<br><span class="text-xs">(Deferred)</span></th>
+                            <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Public<br><span class="text-xs">(Deferred)</span></th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Transactions</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Gross Salary</th>
                             <th class="pb-3 text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">Deductions</th>
@@ -267,15 +379,19 @@
             </div>
         </flux:card>
 
-        <!-- OT Information Notice -->
+        <!-- Payment Summary Notice -->
         <flux:card class="p-4 dark:bg-zinc-900 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
             <div class="flex gap-3">
                 <flux:icon.information-circle class="size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
                 <div class="text-sm text-blue-900 dark:text-blue-100">
-                    <p class="font-medium">Important: Deferred OT Payment</p>
+                    <p class="font-medium">Payment Summary for {{ $submission->month_year }}</p>
                     <p class="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                        The overtime hours shown above are recorded for {{ $submission->month_year }}, but they will be paid in the following month's payroll.
-                        This month's payment includes basic salary plus previous month's overtime.
+                        @if($previousSubmission && $previousOtStats['total_ot_hours'] > 0)
+                            This month's total includes: <strong>Basic salary (RM {{ number_format($submission->workers->sum('basic_salary'), 2) }})</strong> + <strong>Previous month's OT (RM {{ number_format($previousOtStats['total_ot_pay'], 2) }})</strong> + Service charge + SST.
+                        @else
+                            This month's total includes: <strong>Basic salary (RM {{ number_format($submission->workers->sum('basic_salary'), 2) }})</strong> + Service charge + SST. (No previous month OT)
+                        @endif
+                        Current month's OT (RM {{ number_format($currentOtPay ?? 0, 2) }}) will be charged next month.
                     </p>
                 </div>
             </div>

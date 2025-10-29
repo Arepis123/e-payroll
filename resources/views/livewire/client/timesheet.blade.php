@@ -302,7 +302,7 @@
                         <flux:table.cell variant="strong">{{ $submission->total_workers }}</flux:table.cell>
 
                         <flux:table.cell variant="strong">
-                            <div class="text-xs text-zinc-600 dark:text-zinc-400">
+                            <div class="text-xs text-zinc-600 dark:text-zinc-400 hidden">
                                 Total: RM {{ number_format($submission->total_amount, 2) }}<br>
                                 + Service: RM {{ number_format($submission->service_charge, 2) }}<br>
                                 + SST: RM {{ number_format($submission->sst, 2) }}

@@ -302,10 +302,18 @@ class TimesheetEdit extends Component
                 $totalAmount += $payrollWorker->total_payment;
             }
 
+            // Calculate service charge, SST, and grand total
+            $serviceCharge = count($selectedWorkersData) * 200; // RM200 per worker
+            $sst = $serviceCharge * 0.08; // 8% SST on service charge
+            $grandTotal = $totalAmount + $serviceCharge + $sst;
+
             $submission->update([
                 'total_workers' => count($selectedWorkersData),
                 'total_amount' => $totalAmount,
-                'total_with_penalty' => $totalAmount,
+                'service_charge' => $serviceCharge,
+                'sst' => $sst,
+                'grand_total' => $grandTotal,
+                'total_with_penalty' => $grandTotal,
             ]);
 
             if ($action === 'submit') {
@@ -316,7 +324,7 @@ class TimesheetEdit extends Component
                 ]);
                 $workerCount = count($selectedWorkersData);
                 return redirect()->route('client.timesheet')
-                    ->with('success', "Draft submitted successfully for {$submission->month_year}. {$workerCount} worker(s) included. Total amount: RM " . number_format($submission->total_amount, 2));
+                    ->with('success', "Draft submitted successfully for {$submission->month_year}. {$workerCount} worker(s) included. Total amount: RM " . number_format($submission->grand_total, 2));
             } else {
                 // Keep as draft
                 $workerCount = count($selectedWorkersData);

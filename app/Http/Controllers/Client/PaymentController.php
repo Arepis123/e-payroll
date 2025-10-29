@@ -48,10 +48,8 @@ class PaymentController extends Controller
         $submission->updatePenalty();
         $submission->refresh();
 
-        // Calculate total amount to pay
-        $totalAmount = $submission->has_penalty
-            ? $submission->total_with_penalty
-            : $submission->total_amount;
+        // Calculate total amount to pay (includes grand total with service charge + SST, plus penalty if overdue)
+        $totalAmount = $submission->total_with_penalty;
 
         // Create Billplz bill
         $billData = [

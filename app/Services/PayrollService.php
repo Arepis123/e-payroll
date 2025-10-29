@@ -124,7 +124,7 @@ class PayrollService
             'service_charge' => $serviceCharge,
             'sst' => $sst,
             'grand_total' => $grandTotal,
-            'total_with_penalty' => $totalAmount,
+            'total_with_penalty' => $grandTotal,
         ]);
 
         return $submission->fresh(['workers']);
@@ -223,7 +223,7 @@ class PayrollService
             'service_charge' => $serviceCharge,
             'sst' => $sst,
             'grand_total' => $grandTotal,
-            'total_with_penalty' => $totalAmount,
+            'total_with_penalty' => $grandTotal,
         ]);
 
         return $submission->fresh(['workers']);

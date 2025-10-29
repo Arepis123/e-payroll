@@ -11,6 +11,7 @@ use App\Models\Contractor;
 use App\Mail\PayrollReminderMail;
 use Flux\Flux;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Response;
 use Livewire\Component;
 
 class MissingSubmissions extends Component
@@ -19,11 +20,49 @@ class MissingSubmissions extends Component
     public $showRemindModal = false;
     public $selectedContractor = null;
     public $reminderMessage = '';
-    public $pastReminders = [];
+    public $pastReminders;
 
     public function mount()
     {
+        $this->pastReminders = collect();
         $this->loadMissingContractors();
+    }
+
+    public function refresh()
+    {
+        $previousCount = $this->missingContractors->count();
+
+        $this->loadMissingContractors();
+
+        $newCount = $this->missingContractors->count();
+
+        if ($previousCount === 0 && $newCount === 0) {
+            Flux::toast(
+                variant: 'success',
+                heading: 'Data refreshed',
+                text: 'All contractors have submitted their payroll.'
+            );
+        } elseif ($newCount < $previousCount) {
+            $difference = $previousCount - $newCount;
+            Flux::toast(
+                variant: 'success',
+                heading: 'Data refreshed',
+                text: "{$difference} " . \Illuminate\Support\Str::plural('contractor', $difference) . " submitted since last refresh!"
+            );
+        } elseif ($newCount > $previousCount) {
+            $difference = $newCount - $previousCount;
+            Flux::toast(
+                variant: 'warning',
+                heading: 'Data refreshed',
+                text: "{$difference} new " . \Illuminate\Support\Str::plural('contractor', $difference) . " with missing submissions."
+            );
+        } else {
+            Flux::toast(
+                variant: 'info',
+                heading: 'Data refreshed',
+                text: 'No changes. Still ' . $newCount . ' ' . \Illuminate\Support\Str::plural('contractor', $newCount) . ' with missing submissions.'
+            );
+        }
     }
 
     public function openRemindModal($clabNo)
@@ -36,8 +75,7 @@ class MissingSubmissions extends Component
                 ->where('month', now()->month)
                 ->where('year', now()->year)
                 ->orderBy('created_at', 'desc')
-                ->get()
-                ->toArray();
+                ->get();
 
             // Set default reminder message
             $this->reminderMessage = "Dear {$this->selectedContractor['name']},\n\n";
@@ -55,7 +93,72 @@ class MissingSubmissions extends Component
         $this->showRemindModal = false;
         $this->selectedContractor = null;
         $this->reminderMessage = '';
-        $this->pastReminders = [];
+        $this->pastReminders = collect();
+    }
+
+    public function export()
+    {
+        // Check if there are missing contractors
+        if ($this->missingContractors->isEmpty()) {
+            Flux::toast(
+                variant: 'warning',
+                heading: 'No data to export',
+                text: 'There are no missing submissions for the current period.'
+            );
+            return;
+        }
+
+        // Generate CSV content
+        $csvContent = $this->generateCsv();
+
+        // Generate filename with current date
+        $filename = 'missing_submissions_' . now()->format('Y-m-d_His') . '.csv';
+
+        // Return download response
+        return Response::streamDownload(function () use ($csvContent) {
+            echo $csvContent;
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    protected function generateCsv()
+    {
+        $currentMonth = now()->format('F Y');
+
+        // CSV Header
+        $csv = "Missing Payroll Submissions Report\n";
+        $csv .= "Period: {$currentMonth}\n";
+        $csv .= "Generated: " . now()->format('d M Y, h:i A') . "\n\n";
+
+        // Column headers
+        $csv .= "No,CLAB No,Contractor Name,Email,Phone,Active Workers Not Submitted,Total Workers,Workers Submitted,Reminders Sent,Status\n";
+
+        // Data rows
+        foreach ($this->missingContractors as $index => $contractor) {
+            $csv .= ($index + 1) . ',';
+            $csv .= '"' . $contractor['clab_no'] . '",';
+            $csv .= '"' . str_replace('"', '""', $contractor['name']) . '",';
+            $csv .= '"' . ($contractor['email'] ?? 'N/A') . '",';
+            $csv .= '"' . ($contractor['phone'] ?? 'N/A') . '",';
+            $csv .= $contractor['active_workers'] . ',';
+            $csv .= $contractor['total_workers'] . ',';
+            $csv .= ($contractor['total_workers'] - $contractor['active_workers']) . ',';
+            $csv .= $contractor['reminders_sent'] . ',';
+            $csv .= $contractor['reminders_sent'] > 0 ? 'Reminded' : 'Not Reminded';
+            $csv .= "\n";
+        }
+
+        // Summary
+        $csv .= "\nSummary\n";
+        $csv .= "Total Contractors Missing Submission," . $this->missingContractors->count() . "\n";
+        $csv .= "Total Workers Not Submitted," . $this->missingContractors->sum('active_workers') . "\n";
+        $csv .= "Total Workers Submitted," . $this->missingContractors->sum(function ($c) {
+            return $c['total_workers'] - $c['active_workers'];
+        }) . "\n";
+
+        return $csv;
     }
 
     public function sendReminder()

@@ -19,5 +19,7 @@ class PayrollReminder extends Model
     protected $casts = [
         'month' => 'integer',
         'year' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 }

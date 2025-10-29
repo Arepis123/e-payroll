@@ -34,12 +34,14 @@
                 </p>
             </div>
             <div class="flex gap-2">
-                <flux:button variant="ghost" size="sm" icon="arrow-path" wire:click="$refresh">
+                <flux:button variant="ghost" size="sm" icon="arrow-path" icon-variant="outline" wire:click="refresh">
                     Refresh
                 </flux:button>
-                <flux:button variant="ghost" size="sm" icon="arrow-down-tray">
-                    Export
-                </flux:button>
+                @if($missingContractors->count() > 0)
+                    <flux:button variant="ghost" size="sm" icon="arrow-down-tray" icon-variant="outline" wire:click="export">
+                        Export
+                    </flux:button>
+                @endif
             </div>
         </div>
 
@@ -117,10 +119,10 @@
 
                         <flux:table.cell align="center">
                             <div class="flex items-center justify-center gap-2">
-                                <flux:button variant="ghost" size="sm" icon="bell" wire:click="openRemindModal('{{ $contractor['clab_no'] }}')">
+                                <flux:button variant="ghost" size="sm" icon="bell" icon-variant="outline" wire:click="openRemindModal('{{ $contractor['clab_no'] }}')">
                                     Remind
                                 </flux:button>
-                                <flux:button variant="ghost" size="sm" icon="eye" href="{{ route('admin.missing-submissions.detail', $contractor['clab_no']) }}" wire:navigate>
+                                <flux:button variant="ghost" size="sm" icon="eye" icon-variant="outline" href="{{ route('admin.missing-submissions.detail', $contractor['clab_no']) }}" wire:navigate>
                                     View Details
                                 </flux:button>
                             </div>
@@ -148,34 +150,34 @@
 
     <!-- Remind Modal -->
     @if($showRemindModal && $selectedContractor)
-        <flux:modal wire:model="showRemindModal" class="min-w-[700px] max-h-[90vh]">
-            <div class="space-y-4">
+        <flux:modal wire:model="showRemindModal" class="w-full">
+            <div class="space-y-3 sm:space-y-4 p-2 sm:p-6">
                 <div>
-                    <h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                    <h2 class="text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-100">
                         Send Reminder
                     </h2>
-                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                    <p class="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">
                         Send a reminder to contractor about pending payroll submission
                     </p>
                 </div>
 
                 <!-- Contractor Info -->
-                <flux:card class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                    <div class="flex items-center gap-3">
-                        <flux:icon.building-office class="size-8 text-blue-600 dark:text-blue-400" />
-                        <div>
-                            <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ $selectedContractor['name'] }}</p>
+                <flux:card class="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <div class="flex items-start gap-3">
+                        <flux:icon.building-office class="size-6 sm:size-8 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{{ $selectedContractor['name'] }}</p>
                             <p class="text-xs text-zinc-600 dark:text-zinc-400">CLAB No: {{ $selectedContractor['clab_no'] }}</p>
-                            <div class="flex gap-3 mt-1">
+                            <div class="flex flex-col sm:flex-row sm:gap-3 mt-1 space-y-1 sm:space-y-0">
                                 @if($selectedContractor['email'])
-                                    <div class="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
-                                        <flux:icon.envelope class="size-3" />
-                                        <span>{{ $selectedContractor['email'] }}</span>
+                                    <div class="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 truncate">
+                                        <flux:icon.envelope class="size-3 flex-shrink-0" />
+                                        <span class="truncate">{{ $selectedContractor['email'] }}</span>
                                     </div>
                                 @endif
                                 @if($selectedContractor['phone'])
                                     <div class="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400">
-                                        <flux:icon.phone class="size-3" />
+                                        <flux:icon.phone class="size-3 flex-shrink-0" />
                                         <span>{{ $selectedContractor['phone'] }}</span>
                                     </div>
                                 @endif
@@ -185,10 +187,10 @@
                 </flux:card>
 
                 <!-- Pending Info -->
-                <div class="rounded-lg bg-orange-50 dark:bg-orange-900/20 p-4 border border-orange-200 dark:border-orange-800">
-                    <div class="flex items-center gap-2">
-                        <flux:icon.exclamation-triangle class="size-5 text-orange-600 dark:text-orange-400" />
-                        <div>
+                <div class="rounded-lg bg-orange-50 dark:bg-orange-900/20 p-3 sm:p-4 border border-orange-200 dark:border-orange-800">
+                    <div class="flex items-start gap-2">
+                        <flux:icon.exclamation-triangle class="size-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                        <div class="min-w-0">
                             <p class="text-sm font-medium text-orange-900 dark:text-orange-100">
                                 {{ $selectedContractor['active_workers'] }} of {{ $selectedContractor['total_workers'] }} workers not submitted
                             </p>
@@ -200,24 +202,28 @@
                 </div>
 
                 <!-- Past Reminders History -->
-                @if(count($pastReminders) > 0)
+                @if($pastReminders->count() > 0)
                     <div>
                         <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-                            Past Reminders ({{ count($pastReminders) }})
+                            Past Reminders ({{ $pastReminders->count() }})
                         </h3>
-                        <div class="space-y-2 max-h-40 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-700 p-2 bg-zinc-50 dark:bg-zinc-800/50">
+                        <div class="space-y-2 max-h-32 sm:max-h-40 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-700 p-2 bg-zinc-50 dark:bg-zinc-800/50">
                             @foreach($pastReminders as $reminder)
                                 <div class="bg-white dark:bg-zinc-900 rounded-lg p-2 border border-zinc-200 dark:border-zinc-700">
-                                    <div class="flex items-center gap-2 text-xs">
-                                        <flux:icon.clock class="size-3 text-zinc-500 dark:text-zinc-400" />
-                                        <span class="font-medium text-zinc-900 dark:text-zinc-100">
-                                            {{ \Carbon\Carbon::parse($reminder['created_at'])->format('M d, Y h:i A') }}
-                                        </span>
-                                        <span class="text-zinc-400">•</span>
-                                        <flux:icon.user class="size-3 text-zinc-500 dark:text-zinc-400" />
-                                        <span class="text-zinc-600 dark:text-zinc-400">
-                                            {{ $reminder['sent_by'] ?? 'System' }}
-                                        </span>
+                                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs">
+                                        <div class="flex items-center gap-1">
+                                            <flux:icon.clock class="size-3 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                                            <span class="font-medium text-zinc-900 dark:text-zinc-100">
+                                                {{ $reminder->created_at->format('M d, Y h:i A') }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center gap-1 pl-4 sm:pl-0">
+                                            <span class="text-zinc-400 hidden sm:inline">•</span>
+                                            <flux:icon.user class="size-3 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                                            <span class="text-zinc-600 dark:text-zinc-400">
+                                                {{ $reminder->sent_by ?? 'System' }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach
@@ -230,16 +236,17 @@
                     <flux:textarea
                         wire:model="reminderMessage"
                         label="Reminder Message"
-                        rows="6"
-                        resize="none"
+                        rows="8"
+                        resize="vertical"
                         placeholder="Enter your reminder message..."
+                        class="text-sm"
                     />
                 </div>
 
                 <!-- Actions -->
-                <div class="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-                    <flux:button wire:click="closeRemindModal" variant="ghost">Cancel</flux:button>
-                    <flux:button wire:click="sendReminder" variant="primary" icon="paper-airplane">
+                <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                    <flux:button wire:click="closeRemindModal" variant="ghost" class="w-full sm:w-auto">Cancel</flux:button>
+                    <flux:button wire:click="sendReminder" variant="primary" icon="paper-airplane" class="w-full sm:w-auto">
                         Send Reminder
                     </flux:button>
                 </div>

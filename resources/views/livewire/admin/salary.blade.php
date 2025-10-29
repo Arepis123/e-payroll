@@ -54,13 +54,11 @@
     <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
         <div class="mb-4 flex items-center justify-between">
             <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">All Submissions</h2>
-            <div class="flex">
-                <flux:button variant="ghost" size="sm" wire:click="export">
-                    <flux:icon.arrow-down-tray class="size-4 inline" />
+            <div class="flex gap-2">
+                <flux:button variant="ghost" size="sm" icon="arrow-down-tray" icon-variant="outline" wire:click="export">
                     Export
                 </flux:button>
-                <flux:button variant="ghost" size="sm" wire:click="toggleFilters">
-                    <flux:icon.funnel class="size-4 inline" />
+                <flux:button variant="ghost" size="sm" icon="funnel" icon-variant="outline" wire:click="toggleFilters">
                     Filter
                 </flux:button>
             </div>
@@ -147,7 +145,7 @@
                         </flux:table.cell>
 
                         <flux:table.cell variant="strong">
-                            <div class="text-xs text-zinc-600 dark:text-zinc-400">
+                            <div class="text-xs text-zinc-600 dark:text-zinc-400 hidden">
                                 Total: RM {{ number_format($submission->total_amount, 2) }}<br>
                                 + Service: RM {{ number_format($submission->service_charge, 2) }}<br>
                                 + SST: RM {{ number_format($submission->sst, 2) }}
@@ -183,12 +181,11 @@
                             <flux:dropdown>
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
                                 <flux:menu>
-                                    <flux:menu.item icon="eye" href="#">View Details</flux:menu.item>
+                                    <flux:menu.item icon="eye" href="{{ route('admin.salary.detail', $submission->id) }}">View Details</flux:menu.item>
+                                    <flux:menu.item icon="clipboard-document-list" wire:click="openPaymentLog({{ $submission->id }})">Payment Log</flux:menu.item>
                                     @if($submission->payment && $submission->payment->status === 'completed')
                                         <flux:menu.item icon="document">Download Receipt</flux:menu.item>
                                         <flux:menu.item icon="printer">Print Payslip</flux:menu.item>
-                                    @else
-                                        <flux:menu.item icon="credit-card">Process Payment</flux:menu.item>
                                     @endif
                                     @if($submission->status === 'draft')
                                         <flux:menu.item icon="pencil">Edit</flux:menu.item>
@@ -243,4 +240,208 @@
             </div>
         @endif
     </flux:card>
+
+    <!-- Payment Log Modal -->
+    @if($showPaymentLog && $selectedSubmission)
+        <flux:modal wire:model="showPaymentLog" class="w-full max-w-3xl">
+            <div class="space-y-4 p-4 sm:p-6">
+                <div>
+                    <h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                        Payment Log
+                    </h2>
+                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                        Payment details for submission #PAY{{ str_pad($selectedSubmission->id, 6, '0', STR_PAD_LEFT) }}
+                    </p>
+                </div>
+
+                <!-- Submission Info Card -->
+                <flux:card class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <div class="flex items-start gap-3">
+                        <flux:icon.document-text class="size-8 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                                {{ $selectedSubmission->user ? $selectedSubmission->user->name : 'Client ' . $selectedSubmission->contractor_clab_no }}
+                            </p>
+                            <p class="text-xs text-zinc-600 dark:text-zinc-400">
+                                Period: {{ $selectedSubmission->month_year }} | Workers: {{ $selectedSubmission->total_workers }}
+                            </p>
+                            <div class="mt-2 flex flex-wrap gap-2 items-center">
+                                <flux:badge color="blue" size="sm">
+                                    RM {{ number_format($selectedSubmission->grand_total, 2) }}
+                                </flux:badge>
+                                @if($selectedSubmission->payment && $selectedSubmission->payment->status === 'completed')
+                                    <flux:badge color="green" size="sm" icon="check">Paid</flux:badge>
+                                @else
+                                    <flux:badge color="orange" size="sm" icon="clock">Awaiting Payment</flux:badge>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </flux:card>
+
+                @if($selectedSubmission->payment)
+                    <!-- Payment Details -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Payment Details</h3>
+
+                        <!-- Payment Status Badge -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-zinc-600 dark:text-zinc-400">Status:</span>
+                            @php
+                                $payment = $selectedSubmission->payment;
+                                $statusColors = [
+                                    'completed' => 'green',
+                                    'pending' => 'orange',
+                                    'processing' => 'blue',
+                                    'failed' => 'red',
+                                    'cancelled' => 'zinc',
+                                ];
+                                $statusColor = $statusColors[$payment->status] ?? 'zinc';
+                            @endphp
+                            <flux:badge color="{{ $statusColor }}" size="md" inset="top bottom">
+                                {{ ucfirst($payment->status) }}
+                            </flux:badge>
+                        </div>
+
+                        <!-- Payment Information Grid -->
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Payment Method</p>
+                                <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                                    {{ strtoupper($payment->payment_method) }}
+                                </p>
+                            </div>
+
+                            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Amount</p>
+                                <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                                    RM {{ number_format($payment->amount, 2) }}
+                                </p>
+                            </div>
+
+                            @if($payment->transaction_id)
+                                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Transaction ID</p>
+                                    <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1 font-mono">
+                                        {{ $payment->transaction_id }}
+                                    </p>
+                                </div>
+                            @endif
+
+                            @if($payment->billplz_bill_id)
+                                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Billplz Bill ID</p>
+                                    <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1 font-mono">
+                                        {{ $payment->billplz_bill_id }}
+                                    </p>
+                                </div>
+                            @endif
+
+                            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Created At</p>
+                                <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                                    {{ $payment->created_at->format('d M Y, h:i A') }}
+                                </p>
+                            </div>
+
+                            @if($payment->completed_at)
+                                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Completed At</p>
+                                    <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                                        {{ $payment->completed_at->format('d M Y, h:i A') }}
+                                    </p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Billplz URL -->
+                        @if($payment->billplz_url)
+                            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-2">Payment URL</p>
+                                <a href="{{ $payment->billplz_url }}" target="_blank" class="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all">
+                                    {{ $payment->billplz_url }}
+                                </a>
+                            </div>
+                        @endif
+
+                        <!-- Payment Response -->
+                        @if($payment->payment_response && is_array($payment->payment_response) && count($payment->payment_response) > 0)
+                            <div class="space-y-2">
+                                <h4 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Payment Response</h4>
+                                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50 dark:bg-zinc-800/50 max-h-60 overflow-y-auto">
+                                    <pre class="text-xs text-zinc-700 dark:text-zinc-300 font-mono whitespace-pre-wrap break-all">{{ json_encode($payment->payment_response, JSON_PRETTY_PRINT) }}</pre>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Timeline -->
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Timeline</h4>
+                            <div class="space-y-3">
+                                <div class="flex items-start gap-3">
+                                    <div class="rounded-full bg-blue-100 dark:bg-blue-900/30 p-2 flex-shrink-0">
+                                        <flux:icon.plus class="size-4 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Payment Created</p>
+                                        <p class="text-xs text-zinc-600 dark:text-zinc-400">
+                                            {{ $payment->created_at->format('d M Y, h:i A') }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                @if($payment->completed_at)
+                                    <div class="flex items-start gap-3">
+                                        <div class="rounded-full bg-green-100 dark:bg-green-900/30 p-2 flex-shrink-0">
+                                            <flux:icon.check class="size-4 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Payment Completed</p>
+                                            <p class="text-xs text-zinc-600 dark:text-zinc-400">
+                                                {{ $payment->completed_at->format('d M Y, h:i A') }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                @if($payment->updated_at && $payment->updated_at != $payment->created_at)
+                                    <div class="flex items-start gap-3">
+                                        <div class="rounded-full bg-zinc-100 dark:bg-zinc-800 p-2 flex-shrink-0">
+                                            <flux:icon.arrow-path class="size-4 text-zinc-600 dark:text-zinc-400" />
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Last Updated</p>
+                                            <p class="text-xs text-zinc-600 dark:text-zinc-400">
+                                                {{ $payment->updated_at->format('d M Y, h:i A') }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <!-- No Payment Record -->
+                    <flux:card class="p-8 text-center bg-zinc-50 dark:bg-zinc-800/50">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="rounded-full bg-zinc-200 dark:bg-zinc-700 p-4">
+                                <flux:icon.x-circle class="size-8 text-zinc-500 dark:text-zinc-400" />
+                            </div>
+                            <div>
+                                <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">No Payment Record</h3>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                                    This submission does not have a payment record yet.
+                                </p>
+                            </div>
+                        </div>
+                    </flux:card>
+                @endif
+
+                <!-- Actions -->
+                <div class="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                    <flux:button wire:click="closePaymentLog" variant="ghost">Close</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
 </div>

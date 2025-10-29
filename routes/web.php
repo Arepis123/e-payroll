@@ -9,12 +9,18 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
+// Super Admin Routes (Only for super_admin role)
+Route::middleware(['auth', 'verified', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('configuration', \App\Livewire\Admin\Configuration::class)->name('configuration');
+});
+
 // Admin Routes
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
     Route::get('worker', \App\Livewire\Admin\Worker::class)->name('worker');
     Route::get('workers/{worker}', [\App\Http\Controllers\Admin\WorkerController::class, 'show'])->name('workers.show');
     Route::get('salary', \App\Livewire\Admin\Salary::class)->name('salary');
+    Route::get('salary/{id}', \App\Livewire\Admin\SalaryDetail::class)->name('salary.detail');
     Route::get('missing-submissions', \App\Livewire\Admin\MissingSubmissions::class)->name('missing-submissions');
     Route::get('missing-submissions/{clabNo}', \App\Livewire\Admin\MissingSubmissionsDetail::class)->name('missing-submissions.detail');
     Route::get('invoices', \App\Livewire\Admin\Invoices::class)->name('invoices');

@@ -4,7 +4,9 @@ namespace App\Livewire\Admin;
 
 use App\Models\PayrollSubmission;
 use App\Models\PayrollPayment;
+use App\Exports\PayrollSubmissionsExport;
 use Flux\Flux;
+use Maatwebsite\Excel\Facades\Excel;
 use Livewire\Component;
 use Livewire\Attributes\Url;
 
@@ -34,6 +36,10 @@ class Salary extends Component
     public $sortBy = 'created_at';
     public $sortDirection = 'desc';
 
+    // Payment Log Modal
+    public $showPaymentLog = false;
+    public $selectedSubmission = null;
+
     public function mount()
     {
         $this->loadStats();
@@ -57,8 +63,45 @@ class Salary extends Component
 
     public function export()
     {
-        // TODO: Implement export functionality
-        Flux::toast(variant: 'success', text: 'Export functionality coming soon!');
+        // Get all submissions based on current filters
+        $submissions = $this->getSubmissions();
+
+        // Check if there are submissions to export
+        if ($submissions->isEmpty()) {
+            Flux::toast(
+                variant: 'warning',
+                heading: 'No data to export',
+                text: 'No payroll submissions found matching your filters.'
+            );
+            return;
+        }
+
+        // Prepare filter information for export
+        $filters = [
+            'search' => $this->search,
+            'contractor' => $this->contractorFilter ? ($this->contractors[$this->contractorFilter] ?? $this->contractorFilter) : null,
+            'status' => $this->statusFilter,
+            'payment_status' => $this->paymentStatusFilter,
+        ];
+
+        // Generate filename with current date
+        $filename = 'payroll_submissions_' . now()->format('Y-m-d_His') . '.xlsx';
+
+        // Return Excel download
+        return Excel::download(new PayrollSubmissionsExport($submissions, $filters), $filename);
+    }
+
+    public function openPaymentLog($submissionId)
+    {
+        $this->selectedSubmission = PayrollSubmission::with(['user', 'payment'])
+            ->findOrFail($submissionId);
+        $this->showPaymentLog = true;
+    }
+
+    public function closePaymentLog()
+    {
+        $this->showPaymentLog = false;
+        $this->selectedSubmission = null;
     }
 
     public function resetPage()

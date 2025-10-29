@@ -71,12 +71,12 @@ class PayrollSubmission extends Model
     }
 
     /**
-     * Calculate penalty if overdue (8% of total amount)
+     * Calculate penalty if overdue (8% of grand total)
      */
     public function calculatePenalty(): float
     {
         if ($this->isOverdue()) {
-            return $this->total_amount * 0.08;
+            return $this->grand_total * 0.08;
         }
         return 0;
     }
@@ -91,7 +91,7 @@ class PayrollSubmission extends Model
             $this->update([
                 'has_penalty' => true,
                 'penalty_amount' => $penalty,
-                'total_with_penalty' => $this->total_amount + $penalty,
+                'total_with_penalty' => $this->grand_total + $penalty,
             ]);
         }
     }
