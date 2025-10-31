@@ -49,6 +49,7 @@ class PayrollService
         $now = now();
         $month = $now->month;
         $year = $now->year;
+        // Deadline is the last day of the payroll month
         $deadline = Carbon::create($year, $month, 1)->endOfMonth();
 
         $submission = PayrollSubmission::create([
@@ -148,6 +149,7 @@ class PayrollService
         $now = now();
         $month = $now->month;
         $year = $now->year;
+        // Deadline is the last day of the payroll month
         $deadline = Carbon::create($year, $month, 1)->endOfMonth();
 
         $submission = PayrollSubmission::create([

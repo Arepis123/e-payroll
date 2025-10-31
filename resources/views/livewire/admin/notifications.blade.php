@@ -96,7 +96,7 @@
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Type</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Trigger</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</th>
-                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Actions</th>
+                            <th class="pb-3 text-center text-xs font-medium text-zinc-600 dark:text-zinc-400">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
@@ -107,7 +107,7 @@
                                     <div class="text-xs text-zinc-500">{{ $template->slug }}</div>
                                 </td>
                                 <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                                    <flux:badge color="blue" size="sm">{{ ucfirst($template->type) }}</flux:badge>
+                                    <flux:badge color="zinc" size="sm">{{ ucfirst($template->type) }}</flux:badge>
                                 </td>
                                 <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">
                                     @if($template->trigger_type === 'auto_payment_deadline')
@@ -142,18 +142,18 @@
                                     </button>
                                 </td>
                                 <td class="py-3">
-                                    <div class="flex gap-2">
+                                    <div class="flex items-center justify-center gap-2">
                                         <flux:modal.trigger name="template-modal">
-                                            <flux:button wire:click="openTemplateModal({{ $template->id }})" variant="ghost" size="sm">
-                                                <flux:icon.pencil class="size-4" />
+                                            <flux:button wire:click="openTemplateModal({{ $template->id }})" variant="ghost" size="sm" icon="pencil" icon-variant="outline">
+                                                Edit                                        
                                             </flux:button>
                                         </flux:modal.trigger>
                                         <flux:button wire:click="deleteTemplate({{ $template->id }})"
                                             wire:confirm="Are you sure?"
-                                            variant="ghost" size="sm">
-                                            <flux:icon.trash class="size-4 text-red-600" />
+                                            variant="ghost" size="sm" icon="eye" icon-variant="outline">
+                                            View Details
                                         </flux:button>
-                                    </div>
+                                    </div>                                   
                                 </td>
                             </tr>
                         @empty
@@ -357,7 +357,7 @@
             <flux:label>Type</flux:label>
             <flux:select wire:model="templateForm.type" variant="listbox">
                 <flux:select.option value="email">Email</flux:select.option>
-                <flux:select.option value="sms">SMS</flux:select.option>
+                <flux:select.option value="sms" disabled>SMS</flux:select.option>
             </flux:select>
         </div>
 

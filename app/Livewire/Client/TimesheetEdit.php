@@ -87,6 +87,19 @@ class TimesheetEdit extends Component
         $this->selectedWorkers = collect($this->workers)->pluck('worker_id')->toArray();
     }
 
+    public function updated($propertyName)
+    {
+        // Auto-convert empty OT hours to 0
+        if (preg_match('/^workers\.(\d+)\.(ot_normal_hours|ot_rest_hours|ot_public_hours)$/', $propertyName, $matches)) {
+            $index = $matches[1];
+            $field = $matches[2];
+
+            if ($this->workers[$index][$field] === '' || $this->workers[$index][$field] === null) {
+                $this->workers[$index][$field] = 0;
+            }
+        }
+    }
+
     public function toggleWorker($workerId)
     {
         if (in_array($workerId, $this->selectedWorkers)) {

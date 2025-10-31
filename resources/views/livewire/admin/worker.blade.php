@@ -198,7 +198,6 @@
                                     <flux:menu>
                                         <flux:menu.item icon="eye" href="{{ route('admin.workers.show', $worker['id']) }}">View Details</flux:menu.item>
                                         <flux:menu.item icon="pencil">Edit</flux:menu.item>
-                                        <flux:menu.item icon="document-text">View Payslips</flux:menu.item>
                                         <flux:menu.separator />
                                         <flux:menu.item icon="trash" variant="danger">Delete</flux:menu.item>
                                     </flux:menu>

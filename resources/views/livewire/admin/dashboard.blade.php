@@ -129,17 +129,17 @@
                 <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                     <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Quick Actions</h2>
                     <div class="space-y-2">
-                        <flux:button variant="primary" class="w-full" href="#" wire:navigate>
-                            <flux:icon.plus class="size-4" />
-                            Add New Client
+                        <flux:button variant="primary" class="w-full" href="{{ route('admin.salary') }}" wire:navigate>
+                            <flux:icon.wallet class="size-4" />
+                            View Payroll
                         </flux:button>
-                        <flux:button variant="outline" class="w-full" href="#" wire:navigate>
+                        <flux:button variant="outline" class="w-full" href="{{ route('admin.worker') }}" wire:navigate>
                             <flux:icon.users class="size-4" />
                             Manage Workers
                         </flux:button>
-                        <flux:button variant="outline" class="w-full" href="#" wire:navigate>
-                            <flux:icon.document-text class="size-4" />
-                            Generate Report
+                        <flux:button variant="outline" class="w-full" href="{{ route('admin.notifications') }}" wire:navigate>
+                            <flux:icon.bell class="size-4" />
+                            View Reminder
                         </flux:button>
                     </div>
                 </flux:card>

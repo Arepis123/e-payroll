@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\ActivityLog;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -48,6 +49,28 @@ class Login extends Component
 
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
+
+        // Log the login activity
+        $user = Auth::user();
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'contractor_clab_no' => $user->contractor_clab_no,
+            'user_name' => $user->name ?? $user->company_name,
+            'user_email' => $user->email,
+            'module' => 'authentication',
+            'action' => 'login',
+            'description' => "User logged in successfully",
+            'subject_type' => get_class($user),
+            'subject_id' => $user->id,
+            'properties' => [
+                'username' => $this->username,
+                'remember' => $this->remember,
+            ],
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'url' => request()->fullUrl(),
+            'method' => request()->method(),
+        ]);
 
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }

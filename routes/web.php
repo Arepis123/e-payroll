@@ -12,6 +12,7 @@ Route::get('/', function () {
 // Super Admin Routes (Only for super_admin role)
 Route::middleware(['auth', 'verified', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('configuration', \App\Livewire\Admin\Configuration::class)->name('configuration');
+    Route::get('activity-logs', \App\Livewire\Admin\ActivityLogs::class)->name('activity-logs');
 });
 
 // Admin Routes

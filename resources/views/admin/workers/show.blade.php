@@ -363,10 +363,6 @@
                 <flux:card class="p-6 dark:bg-zinc-900 rounded-lg">
                     <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Actions</h2>
                     <div class="space-y-2">
-                        <flux:button variant="primary" class="w-full">
-                            <flux:icon.document-text class="size-4" />
-                            View Payslips
-                        </flux:button>
                         <flux:button variant="outline" class="w-full">
                             <flux:icon.calendar class="size-4" />
                             View Attendance

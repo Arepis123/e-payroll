@@ -6,11 +6,13 @@ use App\Models\PayrollSubmission;
 use App\Models\PayrollWorker;
 use App\Services\PayrollService;
 use App\Services\ContractWorkerService;
+use App\Traits\LogsActivity;
 use Livewire\Component;
 use Livewire\Attributes\Reactive;
 
 class Timesheet extends Component
 {
+    use LogsActivity;
     protected PayrollService $payrollService;
     protected ContractWorkerService $contractWorkerService;
 
@@ -131,6 +133,19 @@ class Timesheet extends Component
 
         // Get statistics
         $this->stats = $this->payrollService->getContractorStatistics($clabNo, $remainingWorkers->count());
+    }
+
+    public function updated($propertyName)
+    {
+        // Auto-convert empty OT hours to 0
+        if (preg_match('/^workers\.(\d+)\.(ot_normal_hours|ot_rest_hours|ot_public_hours)$/', $propertyName, $matches)) {
+            $index = $matches[1];
+            $field = $matches[2];
+
+            if ($this->workers[$index][$field] === '' || $this->workers[$index][$field] === null) {
+                $this->workers[$index][$field] = 0;
+            }
+        }
     }
 
     public function toggleWorker($workerId)
@@ -299,6 +314,19 @@ class Timesheet extends Component
 
             $this->successMessage = "Draft submitted successfully for {$submission->month_year}. Total amount: RM " . number_format($submission->total_amount, 2);
 
+            // Log activity
+            $this->logTimesheetActivity(
+                action: 'submitted',
+                description: "Submitted payroll timesheet for {$submission->month_year} with {$submission->total_workers} workers (Total: RM " . number_format($submission->total_amount, 2) . ")",
+                timesheet: $submission,
+                properties: [
+                    'period' => $submission->month_year,
+                    'workers_count' => $submission->total_workers,
+                    'total_amount' => $submission->total_amount,
+                    'grand_total' => $submission->grand_total,
+                ]
+            );
+
             // Reload data
             $this->loadData();
         } catch (\Exception $e) {
@@ -355,12 +383,36 @@ class Timesheet extends Component
                 $workerCount = count($selectedWorkersData);
                 $this->successMessage = "Draft saved successfully. {$workerCount} worker(s) included.";
                 \Log::info('Draft saved', ['submission_id' => $submission->id]);
+
+                // Log activity
+                $this->logTimesheetActivity(
+                    action: 'draft_saved',
+                    description: "Saved payroll timesheet draft for {$submission->month_year} with {$workerCount} workers",
+                    timesheet: $submission,
+                    properties: [
+                        'period' => $submission->month_year,
+                        'workers_count' => $workerCount,
+                    ]
+                );
             } else {
                 \Log::info('Calling savePayrollSubmission');
                 $submission = $this->payrollService->savePayrollSubmission($clabNo, $selectedWorkersData);
                 $workerCount = count($selectedWorkersData);
                 $this->successMessage = "Timesheet submitted successfully for {$submission->month_year}. {$workerCount} worker(s) included. Total amount: RM " . number_format($submission->total_amount, 2);
                 \Log::info('Submission saved', ['submission_id' => $submission->id]);
+
+                // Log activity
+                $this->logTimesheetActivity(
+                    action: 'submitted',
+                    description: "Submitted payroll timesheet for {$submission->month_year} with {$workerCount} workers (Total: RM " . number_format($submission->total_amount, 2) . ")",
+                    timesheet: $submission,
+                    properties: [
+                        'period' => $submission->month_year,
+                        'workers_count' => $workerCount,
+                        'total_amount' => $submission->total_amount,
+                        'grand_total' => $submission->grand_total,
+                    ]
+                );
             }
 
             // Reload data

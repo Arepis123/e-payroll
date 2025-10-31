@@ -93,7 +93,7 @@ class Salary extends Component
 
     public function openPaymentLog($submissionId)
     {
-        $this->selectedSubmission = PayrollSubmission::with(['user', 'payment'])
+        $this->selectedSubmission = PayrollSubmission::with(['user', 'payment', 'payments'])
             ->findOrFail($submissionId);
         $this->showPaymentLog = true;
     }

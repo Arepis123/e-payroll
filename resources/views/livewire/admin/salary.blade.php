@@ -183,15 +183,9 @@
                                 <flux:menu>
                                     <flux:menu.item icon="eye" href="{{ route('admin.salary.detail', $submission->id) }}">View Details</flux:menu.item>
                                     <flux:menu.item icon="clipboard-document-list" wire:click="openPaymentLog({{ $submission->id }})">Payment Log</flux:menu.item>
-                                    @if($submission->payment && $submission->payment->status === 'completed')
+                                    {{-- @if($submission->payment && $submission->payment->status === 'completed')
                                         <flux:menu.item icon="document">Download Receipt</flux:menu.item>
-                                        <flux:menu.item icon="printer">Print Payslip</flux:menu.item>
-                                    @endif
-                                    @if($submission->status === 'draft')
-                                        <flux:menu.item icon="pencil">Edit</flux:menu.item>
-                                        <flux:menu.separator />
-                                        <flux:menu.item icon="trash" variant="danger">Delete</flux:menu.item>
-                                    @endif
+                                    @endif --}}
                                 </flux:menu>
                             </flux:dropdown>
                         </flux:table.cell>
@@ -265,7 +259,7 @@
                             <p class="text-xs text-zinc-600 dark:text-zinc-400">
                                 Period: {{ $selectedSubmission->month_year }} | Workers: {{ $selectedSubmission->total_workers }}
                             </p>
-                            <div class="mt-2 flex flex-wrap gap-2 items-center">
+                            <div class="mt-2 flex flex-wrap gap-2 items-center hidden">
                                 <flux:badge color="blue" size="sm">
                                     RM {{ number_format($selectedSubmission->grand_total, 2) }}
                                 </flux:badge>
@@ -279,145 +273,138 @@
                     </div>
                 </flux:card>
 
-                @if($selectedSubmission->payment)
-                    <!-- Payment Details -->
+                @if($selectedSubmission->payments && $selectedSubmission->payments->count() > 0)
+                    <!-- Payment Attempts -->
                     <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Payment Details</h3>
-
-                        <!-- Payment Status Badge -->
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm text-zinc-600 dark:text-zinc-400">Status:</span>
-                            @php
-                                $payment = $selectedSubmission->payment;
-                                $statusColors = [
-                                    'completed' => 'green',
-                                    'pending' => 'orange',
-                                    'processing' => 'blue',
-                                    'failed' => 'red',
-                                    'cancelled' => 'zinc',
-                                ];
-                                $statusColor = $statusColors[$payment->status] ?? 'zinc';
-                            @endphp
-                            <flux:badge color="{{ $statusColor }}" size="md" inset="top bottom">
-                                {{ ucfirst($payment->status) }}
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Payment Attempts</h3>
+                            <flux:badge color="zinc" size="sm">
+                                {{ $selectedSubmission->payments->count() }} {{ Str::plural('attempt', $selectedSubmission->payments->count()) }}
                             </flux:badge>
                         </div>
 
-                        <!-- Payment Information Grid -->
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
-                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Payment Method</p>
-                                <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
-                                    {{ strtoupper($payment->payment_method) }}
-                                </p>
-                            </div>
-
-                            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
-                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Amount</p>
-                                <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
-                                    RM {{ number_format($payment->amount, 2) }}
-                                </p>
-                            </div>
-
-                            @if($payment->transaction_id)
-                                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Transaction ID</p>
-                                    <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1 font-mono">
-                                        {{ $payment->transaction_id }}
-                                    </p>
-                                </div>
-                            @endif
-
-                            @if($payment->billplz_bill_id)
-                                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Billplz Bill ID</p>
-                                    <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1 font-mono">
-                                        {{ $payment->billplz_bill_id }}
-                                    </p>
-                                </div>
-                            @endif
-
-                            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
-                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Created At</p>
-                                <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
-                                    {{ $payment->created_at->format('d M Y, h:i A') }}
-                                </p>
-                            </div>
-
-                            @if($payment->completed_at)
-                                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Completed At</p>
-                                    <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
-                                        {{ $payment->completed_at->format('d M Y, h:i A') }}
-                                    </p>
-                                </div>
-                            @endif
+                        <!-- Latest Payment Status -->
+                        @php
+                            $latestPayment = $selectedSubmission->payments->first();
+                            $statusColors = [
+                                'completed' => 'green',
+                                'pending' => 'orange',
+                                'processing' => 'blue',
+                                'failed' => 'red',
+                                'cancelled' => 'yellow',
+                            ];
+                        @endphp
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-zinc-600 dark:text-zinc-400">Current Status:</span>
+                            <flux:badge color="{{ $statusColors[$latestPayment->status] ?? 'zinc' }}" size="md" inset="top bottom">
+                                {{ ucfirst($latestPayment->status) }}
+                            </flux:badge>
                         </div>
 
-                        <!-- Billplz URL -->
-                        @if($payment->billplz_url)
-                            <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3">
-                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-2">Payment URL</p>
-                                <a href="{{ $payment->billplz_url }}" target="_blank" class="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all">
-                                    {{ $payment->billplz_url }}
-                                </a>
-                            </div>
-                        @endif
-
-                        <!-- Payment Response -->
-                        @if($payment->payment_response && is_array($payment->payment_response) && count($payment->payment_response) > 0)
-                            <div class="space-y-2">
-                                <h4 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Payment Response</h4>
-                                <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50 dark:bg-zinc-800/50 max-h-60 overflow-y-auto">
-                                    <pre class="text-xs text-zinc-700 dark:text-zinc-300 font-mono whitespace-pre-wrap break-all">{{ json_encode($payment->payment_response, JSON_PRETTY_PRINT) }}</pre>
+                        <!-- Info Note -->
+                        <div class="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3">
+                            <div class="flex gap-2">
+                                <flux:icon.information-circle class="size-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                                <div class="text-xs text-blue-800 dark:text-blue-200">
+                                    <p class="font-medium mb-1">Payment Attempt Tracking</p>
+                                    <p>Each payment attempt is logged separately. Pending payments older than 1 hour are automatically marked as cancelled when a new payment is initiated.</p>
                                 </div>
                             </div>
-                        @endif
+                        </div>
 
-                        <!-- Timeline -->
-                        <div class="space-y-2">
-                            <h4 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Timeline</h4>
-                            <div class="space-y-3">
-                                <div class="flex items-start gap-3">
-                                    <div class="rounded-full bg-blue-100 dark:bg-blue-900/30 p-2 flex-shrink-0">
-                                        <flux:icon.plus class="size-4 text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Payment Created</p>
-                                        <p class="text-xs text-zinc-600 dark:text-zinc-400">
-                                            {{ $payment->created_at->format('d M Y, h:i A') }}
-                                        </p>
-                                    </div>
-                                </div>
+                        <!-- All Payment Attempts List -->
+                        <div class="space-y-3">
+                            @foreach($selectedSubmission->payments as $index => $payment)
+                                @php
+                                    $borderColor = match($payment->status) {
+                                        'completed' => 'border-l-4 border-green-500',
+                                        'failed' => 'border-l-4 border-red-500',
+                                        'cancelled' => 'border-l-4 border-yellow-500',
+                                        'pending' => 'border-l-4 border-orange-500',
+                                        'processing' => 'border-l-4 border-blue-500',
+                                        default => 'border-l-4 border-zinc-300 dark:border-zinc-700',
+                                    };
+                                @endphp
+                                <flux:card class="p-4 {{ $borderColor }}">
+                                    <div class="space-y-3">
+                                        <!-- Header -->
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                                    Attempt #{{ $selectedSubmission->payments->count() - $index }}
+                                                </span>
+                                                <flux:badge color="{{ $statusColors[$payment->status] ?? 'zinc' }}" size="sm" inset="top bottom">
+                                                    {{ ucfirst($payment->status) }}
+                                                </flux:badge>
+                                                @if($index === 0)
+                                                    <flux:badge color="zinc" size="sm">Latest</flux:badge>
+                                                @endif
+                                            </div>
+                                            <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                                                {{ $payment->created_at->format('d M Y, h:i A') }}
+                                            </span>
+                                        </div>
 
-                                @if($payment->completed_at)
-                                    <div class="flex items-start gap-3">
-                                        <div class="rounded-full bg-green-100 dark:bg-green-900/30 p-2 flex-shrink-0">
-                                            <flux:icon.check class="size-4 text-green-600 dark:text-green-400" />
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Payment Completed</p>
-                                            <p class="text-xs text-zinc-600 dark:text-zinc-400">
-                                                {{ $payment->completed_at->format('d M Y, h:i A') }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                @endif
+                                        <!-- Payment Details Grid -->
+                                        <div class="grid gap-2 sm:grid-cols-2 text-sm">
+                                            <div>
+                                                <span class="text-zinc-500 dark:text-zinc-400">Method:</span>
+                                                <span class="font-medium text-zinc-900 dark:text-zinc-100 ml-1">{{ strtoupper($payment->payment_method) }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-zinc-500 dark:text-zinc-400">Amount:</span>
+                                                <span class="font-medium text-zinc-900 dark:text-zinc-100 ml-1">RM {{ number_format($payment->amount, 2) }}</span>
+                                            </div>
 
-                                @if($payment->updated_at && $payment->updated_at != $payment->created_at)
-                                    <div class="flex items-start gap-3">
-                                        <div class="rounded-full bg-zinc-100 dark:bg-zinc-800 p-2 flex-shrink-0">
-                                            <flux:icon.arrow-path class="size-4 text-zinc-600 dark:text-zinc-400" />
+                                            @if($payment->transaction_id)
+                                                <div class="sm:col-span-2">
+                                                    <span class="text-zinc-500 dark:text-zinc-400">Transaction ID:</span>
+                                                    <span class="font-mono text-xs text-zinc-900 dark:text-zinc-100 ml-1">{{ $payment->transaction_id }}</span>
+                                                </div>
+                                            @endif
+
+                                            @if($payment->billplz_bill_id)
+                                                <div class="sm:col-span-2">
+                                                    <span class="text-zinc-500 dark:text-zinc-400">Billplz Bill ID:</span>
+                                                    <span class="font-mono text-xs text-zinc-900 dark:text-zinc-100 ml-1">{{ $payment->billplz_bill_id }}</span>
+                                                </div>
+                                            @endif
+
+                                            @if($payment->completed_at)
+                                                <div class="sm:col-span-2">
+                                                    <span class="text-zinc-500 dark:text-zinc-400">Completed At:</span>
+                                                    <span class="font-medium text-zinc-900 dark:text-zinc-100 ml-1">{{ $payment->completed_at->format('d M Y, h:i A') }}</span>
+                                                </div>
+                                            @endif
                                         </div>
-                                        <div>
-                                            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Last Updated</p>
-                                            <p class="text-xs text-zinc-600 dark:text-zinc-400">
-                                                {{ $payment->updated_at->format('d M Y, h:i A') }}
-                                            </p>
-                                        </div>
+
+                                        <!-- Billplz URL -->
+                                        @if($payment->billplz_url)
+                                            <div class="pt-2 border-t border-zinc-200 dark:border-zinc-700">
+                                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Payment URL:</p>
+                                                <a href="{{ $payment->billplz_url }}" target="_blank" class="text-xs text-blue-600 dark:text-blue-400 hover:underline break-all">
+                                                    {{ $payment->billplz_url }}
+                                                </a>
+                                            </div>
+                                        @endif
+
+                                        <!-- Payment Response (Collapsible) -->
+                                        @if($payment->payment_response && is_array($payment->payment_response) && count($payment->payment_response) > 0)
+                                            <div class="pt-2 border-t border-zinc-200 dark:border-zinc-700">
+                                                <details class="group">
+                                                    <summary class="text-xs font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center gap-1">
+                                                        <flux:icon.chevron-right class="size-3 group-open:rotate-90 transition-transform" />
+                                                        View Payment Response
+                                                    </summary>
+                                                    <div class="mt-2 rounded-lg border border-zinc-200 dark:border-zinc-700 p-2 bg-zinc-50 dark:bg-zinc-800/50 max-h-40 overflow-y-auto">
+                                                        <pre class="text-xs text-zinc-700 dark:text-zinc-300 font-mono whitespace-pre-wrap break-all">{{ json_encode($payment->payment_response, JSON_PRETTY_PRINT) }}</pre>
+                                                    </div>
+                                                </details>
+                                            </div>
+                                        @endif
                                     </div>
-                                @endif
-                            </div>
+                                </flux:card>
+                            @endforeach
                         </div>
                     </div>
                 @else

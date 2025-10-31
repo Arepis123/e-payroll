@@ -263,7 +263,6 @@
                                     <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
                                     <flux:menu>
                                         <flux:menu.item icon="eye" href="{{ route('client.workers.show', $worker->wkr_id) }}">View Details</flux:menu.item>
-                                        <flux:menu.item icon="document-text">View Payslips</flux:menu.item>
                                     </flux:menu>
                                 </flux:dropdown>
                             </flux:table.cell>

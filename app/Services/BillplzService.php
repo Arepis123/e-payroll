@@ -96,6 +96,32 @@ class BillplzService
     }
 
     /**
+     * Delete a bill
+     *
+     * @param string $billId
+     * @return bool
+     */
+    public function deleteBill(string $billId): bool
+    {
+        try {
+            $this->client->delete("bills/{$billId}");
+
+            Log::info('Billplz bill deleted successfully', [
+                'bill_id' => $billId,
+            ]);
+
+            return true;
+        } catch (GuzzleException $e) {
+            Log::warning('Billplz bill deletion failed', [
+                'bill_id' => $billId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * Validate webhook signature
      *
      * @param string $billplzId

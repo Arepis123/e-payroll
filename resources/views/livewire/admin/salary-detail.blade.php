@@ -686,7 +686,7 @@
                         <!-- Summary Row -->
                         <flux:table.rows class="border-t-2 border-zinc-300 dark:border-zinc-600 bg-orange-50 dark:bg-orange-900/20">
                             <flux:table.cell colspan="2" variant="strong" class="font-bold">
-                                TOTAL DEFERRED OT
+                                <div class="ms-2">TOTAL DEFERRED OT</div>
                             </flux:table.cell>
                             <flux:table.cell align="center" variant="strong" class="font-bold">
                                 {{ number_format($workers->sum('ot_normal_hours'), 2) }}h

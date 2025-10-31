@@ -55,11 +55,19 @@ class PayrollSubmission extends Model
     }
 
     /**
-     * Get the payment record for this submission
+     * Get the payment record for this submission (latest/active payment)
      */
     public function payment()
     {
-        return $this->hasOne(PayrollPayment::class);
+        return $this->hasOne(PayrollPayment::class)->latestOfMany();
+    }
+
+    /**
+     * Get all payment attempts for this submission
+     */
+    public function payments()
+    {
+        return $this->hasMany(PayrollPayment::class)->orderBy('created_at', 'desc');
     }
 
     /**
