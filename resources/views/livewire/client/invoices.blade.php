@@ -7,6 +7,18 @@
         </div>
     </div>
 
+    @if(session('success'))
+        <div class="rounded-lg bg-green-50 dark:bg-green-900/20 p-4 border border-green-200 dark:border-green-800">
+            <p class="text-sm text-green-800 dark:text-green-200">{{ session('success') }}</p>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+            <p class="text-sm text-red-800 dark:text-red-200">{{ session('error') }}</p>
+        </div>
+    @endif
+
     @if(isset($error))
         <div class="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
             <p class="text-sm text-red-800 dark:text-red-200">{{ $error }}</p>
@@ -177,16 +189,12 @@
                         <flux:table.cell variant="strong">{{ $invoice->total_workers }}</flux:table.cell>
 
                         <flux:table.cell variant="strong">
-                            <div class="text-xs text-zinc-600 dark:text-zinc-400 hidden">
-                                Total: RM {{ number_format($invoice->total_amount, 2) }}<br>
-                                + Service & SST: RM {{ number_format($invoice->service_charge + $invoice->sst, 2) }}
-                            </div>
-                            <div class="font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
-                                RM {{ number_format($invoice->grand_total, 2) }}
+                            <div class="font-semibold text-zinc-900 dark:text-zinc-100">
+                                RM {{ number_format($invoice->total_with_penalty, 2) }}
                             </div>
                             @if($invoice->has_penalty)
                                 <span class="text-xs text-red-600 dark:text-red-400">
-                                    (+RM {{ number_format($invoice->penalty_amount, 2) }} penalty)
+                                    (includes RM {{ number_format($invoice->penalty_amount, 2) }} penalty)
                                 </span>
                             @endif
                         </flux:table.cell>
@@ -219,6 +227,10 @@
                                 <flux:menu>
                                     <flux:menu.item icon="eye" href="{{ route('client.invoices.show', $invoice->id) }}">View Invoice</flux:menu.item>
                                     <flux:menu.item icon="arrow-down-tray" href="{{ route('client.invoices.download', $invoice->id) }}">Download PDF</flux:menu.item>
+                                    @if($invoice->status === 'draft')
+                                        <flux:menu.separator />
+                                        <flux:menu.item icon="paper-airplane" wire:click="finalizeDraft({{ $invoice->id }})">Finalize & Submit</flux:menu.item>
+                                    @endif
                                     @if($invoice->status === 'pending_payment' || $invoice->status === 'overdue')
                                         <flux:menu.separator />
                                         <form method="POST" action="{{ route('client.payment.create', $invoice->id) }}" class="contents">

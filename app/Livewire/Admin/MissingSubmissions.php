@@ -22,10 +22,34 @@ class MissingSubmissions extends Component
     public $reminderMessage = '';
     public $pastReminders;
 
+    // Filter properties
+    public $selectedMonth;
+    public $selectedYear;
+    public $availableMonths = [];
+    public $availableYears = [];
+
+    // Historical tracking
+    public $historicalSummary = [];
+    public $showHistoricalSummary = false;
+
     public function mount()
     {
         $this->pastReminders = collect();
+
+        // Set default to current month/year
+        $this->selectedMonth = now()->month;
+        $this->selectedYear = now()->year;
+
+        // Generate available months and years
+        $this->generateAvailablePeriodsFromSubmissions();
+
         $this->loadMissingContractors();
+        $this->loadHistoricalSummary();
+    }
+
+    public function toggleHistoricalSummary()
+    {
+        $this->showHistoricalSummary = !$this->showHistoricalSummary;
     }
 
     public function refresh()
@@ -70,17 +94,31 @@ class MissingSubmissions extends Component
         $this->selectedContractor = collect($this->missingContractors)->firstWhere('clab_no', $clabNo);
 
         if ($this->selectedContractor) {
-            // Load past reminders for this contractor (current month/year)
+            // Load past reminders for this contractor (selected month/year)
             $this->pastReminders = PayrollReminder::where('contractor_clab_no', $clabNo)
-                ->where('month', now()->month)
-                ->where('year', now()->year)
+                ->where('month', $this->selectedMonth)
+                ->where('year', $this->selectedYear)
                 ->orderBy('created_at', 'desc')
                 ->get();
 
             // Set default reminder message
+            $periodLabel = \Carbon\Carbon::create($this->selectedYear, $this->selectedMonth, 1)->format('F Y');
             $this->reminderMessage = "Dear {$this->selectedContractor['name']},\n\n";
-            $this->reminderMessage .= "This is a friendly reminder that you have {$this->selectedContractor['active_workers']} worker(s) pending payroll submission for " . now()->format('F Y') . ".\n\n";
-            $this->reminderMessage .= "Please submit the payroll at your earliest convenience to avoid any delays.\n\n";
+
+            // Build message based on issue types
+            $issues = [];
+            if ($this->selectedContractor['not_submitted'] > 0) {
+                $issues[] = "{$this->selectedContractor['not_submitted']} worker(s) payroll not yet submitted";
+            }
+            if ($this->selectedContractor['submitted_not_paid'] > 0) {
+                $issues[] = "{$this->selectedContractor['submitted_not_paid']} worker(s) submitted but payment not completed";
+            }
+
+            $this->reminderMessage .= "This is a friendly reminder regarding the following outstanding items for {$periodLabel}:\n\n";
+            foreach ($issues as $issue) {
+                $this->reminderMessage .= "• {$issue}\n";
+            }
+            $this->reminderMessage .= "\nPlease complete the required actions at your earliest convenience to avoid any delays or penalties.\n\n";
             $this->reminderMessage .= "Thank you for your cooperation.\n\n";
             $this->reminderMessage .= "Best regards,\ne-Salary CLAB System";
 
@@ -111,8 +149,75 @@ class MissingSubmissions extends Component
         // Generate CSV content
         $csvContent = $this->generateCsv();
 
-        // Generate filename with current date
-        $filename = 'missing_submissions_' . now()->format('Y-m-d_His') . '.csv';
+        // Generate filename with selected period
+        $filename = sprintf(
+            'missing_submissions_%d-%02d_%s.csv',
+            $this->selectedYear,
+            $this->selectedMonth,
+            now()->format('Ymd_His')
+        );
+
+        // Return download response
+        return Response::streamDownload(function () use ($csvContent) {
+            echo $csvContent;
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    public function exportDetailed()
+    {
+        // Check if there are historical summaries
+        if (empty($this->historicalSummary)) {
+            Flux::toast(
+                variant: 'warning',
+                heading: 'No data to export',
+                text: 'There are no contractors with multiple missing periods to export.'
+            );
+            return;
+        }
+
+        // Generate detailed CSV content
+        $csvContent = $this->generateDetailedCsv();
+
+        // Generate filename
+        $filename = sprintf(
+            'detailed_missing_submissions_%s.csv',
+            now()->format('Ymd_His')
+        );
+
+        // Return download response
+        return Response::streamDownload(function () use ($csvContent) {
+            echo $csvContent;
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    public function exportCurrentPeriodDetailed()
+    {
+        // Check if there are missing contractors
+        if ($this->missingContractors->isEmpty()) {
+            Flux::toast(
+                variant: 'warning',
+                heading: 'No data to export',
+                text: 'There are no missing submissions for the current period.'
+            );
+            return;
+        }
+
+        // Generate detailed CSV content for current period
+        $csvContent = $this->generateCurrentPeriodDetailedCsv();
+
+        // Generate filename with selected period
+        $filename = sprintf(
+            'detailed_submissions_%d-%02d_%s.csv',
+            $this->selectedYear,
+            $this->selectedMonth,
+            now()->format('Ymd_His')
+        );
 
         // Return download response
         return Response::streamDownload(function () use ($csvContent) {
@@ -125,15 +230,15 @@ class MissingSubmissions extends Component
 
     protected function generateCsv()
     {
-        $currentMonth = now()->format('F Y');
+        $periodLabel = \Carbon\Carbon::create($this->selectedYear, $this->selectedMonth, 1)->format('F Y');
 
         // CSV Header
-        $csv = "Missing Payroll Submissions Report\n";
-        $csv .= "Period: {$currentMonth}\n";
+        $csv = "Missing Payroll Submissions & Payments Report\n";
+        $csv .= "Period: {$periodLabel}\n";
         $csv .= "Generated: " . now()->format('d M Y, h:i A') . "\n\n";
 
         // Column headers
-        $csv .= "No,CLAB No,Contractor Name,Email,Phone,Active Workers Not Submitted,Total Workers,Workers Submitted,Reminders Sent,Status\n";
+        $csv .= "No,CLAB No,Contractor Name,Email,Phone,Workers With Issues,Not Submitted,Not Paid,Total Workers,Workers Completed,Reminders Sent,Status\n";
 
         // Data rows
         foreach ($this->missingContractors as $index => $contractor) {
@@ -143,6 +248,8 @@ class MissingSubmissions extends Component
             $csv .= '"' . ($contractor['email'] ?? 'N/A') . '",';
             $csv .= '"' . ($contractor['phone'] ?? 'N/A') . '",';
             $csv .= $contractor['active_workers'] . ',';
+            $csv .= $contractor['not_submitted'] . ',';
+            $csv .= $contractor['submitted_not_paid'] . ',';
             $csv .= $contractor['total_workers'] . ',';
             $csv .= ($contractor['total_workers'] - $contractor['active_workers']) . ',';
             $csv .= $contractor['reminders_sent'] . ',';
@@ -152,13 +259,172 @@ class MissingSubmissions extends Component
 
         // Summary
         $csv .= "\nSummary\n";
-        $csv .= "Total Contractors Missing Submission," . $this->missingContractors->count() . "\n";
-        $csv .= "Total Workers Not Submitted," . $this->missingContractors->sum('active_workers') . "\n";
-        $csv .= "Total Workers Submitted," . $this->missingContractors->sum(function ($c) {
+        $csv .= "Total Contractors With Issues," . $this->missingContractors->count() . "\n";
+        $csv .= "Total Workers With Issues," . $this->missingContractors->sum('active_workers') . "\n";
+        $csv .= "Total Workers Not Submitted," . $this->missingContractors->sum('not_submitted') . "\n";
+        $csv .= "Total Workers Not Paid," . $this->missingContractors->sum('submitted_not_paid') . "\n";
+        $csv .= "Total Workers Completed," . $this->missingContractors->sum(function ($c) {
             return $c['total_workers'] - $c['active_workers'];
         }) . "\n";
 
         return $csv;
+    }
+
+    protected function generateCurrentPeriodDetailedCsv()
+    {
+        $periodLabel = \Carbon\Carbon::create($this->selectedYear, $this->selectedMonth, 1)->format('F Y');
+
+        // CSV Header
+        $csv = "Detailed Submissions & Payments Report\n";
+        $csv .= "Period: {$periodLabel}\n";
+        $csv .= "Generated: " . now()->format('d M Y, h:i A') . "\n\n";
+
+        // Single table header
+        $csv .= "No,CLAB No,Contractor Name,Contractor Email,Contractor Phone,Worker ID,Worker Name,Passport No,Status,Issue Type\n";
+
+        $rowNumber = 1;
+
+        // Process each contractor
+        foreach ($this->missingContractors as $contractor) {
+            // Get worker details for this contractor
+            $workerDetails = $this->getWorkerDetailsForPeriod(
+                $contractor['clab_no'],
+                $this->selectedMonth,
+                $this->selectedYear
+            );
+
+            if ($workerDetails->isNotEmpty()) {
+                foreach ($workerDetails as $worker) {
+                    $csv .= $rowNumber . ',';
+                    $csv .= '"' . $contractor['clab_no'] . '",';
+                    $csv .= '"' . str_replace('"', '""', $contractor['name']) . '",';
+                    $csv .= '"' . ($contractor['email'] ?? 'N/A') . '",';
+                    $csv .= '"' . ($contractor['phone'] ?? 'N/A') . '",';
+                    $csv .= '"' . $worker['worker_id'] . '",';
+                    $csv .= '"' . str_replace('"', '""', $worker['name']) . '",';
+                    $csv .= '"' . ($worker['passport'] ?? 'N/A') . '",';
+                    $csv .= '"' . $worker['status'] . '",';
+                    $csv .= '"' . $worker['issue_type'] . '"';
+                    $csv .= "\n";
+                    $rowNumber++;
+                }
+            }
+        }
+
+        // Overall Summary
+        $csv .= "\n";
+        $csv .= "SUMMARY\n";
+        $csv .= "Period,{$periodLabel}\n";
+        $csv .= "Total Contractors With Issues," . $this->missingContractors->count() . "\n";
+        $csv .= "Total Workers With Issues," . $this->missingContractors->sum('active_workers') . "\n";
+        $csv .= "Total Workers Not Submitted," . $this->missingContractors->sum('not_submitted') . "\n";
+        $csv .= "Total Workers Not Paid," . $this->missingContractors->sum('submitted_not_paid') . "\n";
+
+        return $csv;
+    }
+
+    protected function generateDetailedCsv()
+    {
+        $endDate = \Carbon\Carbon::create($this->selectedYear, $this->selectedMonth, 1);
+        $startDate = $endDate->copy()->subMonths(5);
+
+        // CSV Header
+        $csv = "Detailed Missing Submissions & Payments Report (Historical)\n";
+        $csv .= "Period Range: {$startDate->format('F Y')} - {$endDate->format('F Y')}\n";
+        $csv .= "Generated: " . now()->format('d M Y, h:i A') . "\n\n";
+
+        // Single table header
+        $csv .= "No,Period,CLAB No,Contractor Name,Contractor Email,Missing Months Count,Worker ID,Worker Name,Passport No,Status,Issue Type\n";
+
+        $rowNumber = 1;
+
+        // Process each contractor in historical summary
+        foreach ($this->historicalSummary as $contractor) {
+            // Process each missing month for this contractor
+            foreach ($contractor['missing_months'] as $period) {
+                // Get worker details for this period
+                $workerDetails = $this->getWorkerDetailsForPeriod(
+                    $contractor['clab_no'],
+                    $period['month'],
+                    $period['year']
+                );
+
+                if ($workerDetails->isNotEmpty()) {
+                    foreach ($workerDetails as $worker) {
+                        $csv .= $rowNumber . ',';
+                        $csv .= '"' . $period['label'] . '",';
+                        $csv .= '"' . $contractor['clab_no'] . '",';
+                        $csv .= '"' . str_replace('"', '""', $contractor['name']) . '",';
+                        $csv .= '"' . ($contractor['email'] ?? 'N/A') . '",';
+                        $csv .= $contractor['missing_count'] . ',';
+                        $csv .= '"' . $worker['worker_id'] . '",';
+                        $csv .= '"' . str_replace('"', '""', $worker['name']) . '",';
+                        $csv .= '"' . ($worker['passport'] ?? 'N/A') . '",';
+                        $csv .= '"' . $worker['status'] . '",';
+                        $csv .= '"' . $worker['issue_type'] . '"';
+                        $csv .= "\n";
+                        $rowNumber++;
+                    }
+                }
+            }
+        }
+
+        // Overall Summary
+        $csv .= "\n";
+        $csv .= "SUMMARY\n";
+        $csv .= "Period Range,{$startDate->format('F Y')} - {$endDate->format('F Y')}\n";
+        $csv .= "Total Contractors with Repeat Issues," . count($this->historicalSummary) . "\n";
+        $csv .= "Total Records," . ($rowNumber - 1) . "\n";
+
+        return $csv;
+    }
+
+    protected function getWorkerDetailsForPeriod($clabNo, $month, $year)
+    {
+        // Get all active workers for this contractor with worker relationship
+        $activeWorkers = ContractWorker::active()
+            ->where('con_ctr_clab_no', $clabNo)
+            ->with('worker') // Eager load worker relationship
+            ->get();
+
+        $result = collect();
+
+        foreach ($activeWorkers as $contractWorker) {
+            // Check if worker was submitted and paid for this period
+            $payrollWorker = PayrollWorker::whereHas('payrollSubmission', function ($query) use ($month, $year) {
+                    $query->where('month', $month)
+                          ->where('year', $year);
+                })
+                ->where('worker_id', $contractWorker->con_wkr_id)
+                ->with('payrollSubmission')
+                ->first();
+
+            // Get worker details from relationship
+            $workerName = $contractWorker->worker ? $contractWorker->worker->wkr_name : 'Unknown';
+            $workerPassport = $contractWorker->worker ? $contractWorker->worker->wkr_passno : ($contractWorker->con_wkr_passno ?? 'N/A');
+
+            if (!$payrollWorker) {
+                // Not submitted at all
+                $result->push([
+                    'worker_id' => $contractWorker->con_wkr_id,
+                    'name' => $workerName,
+                    'passport' => $workerPassport,
+                    'status' => 'Incomplete',
+                    'issue_type' => 'Not Submitted',
+                ]);
+            } elseif ($payrollWorker->payrollSubmission->status !== 'paid') {
+                // Submitted but not paid
+                $result->push([
+                    'worker_id' => $contractWorker->con_wkr_id,
+                    'name' => $workerName,
+                    'passport' => $workerPassport,
+                    'status' => 'Submitted - Payment Pending',
+                    'issue_type' => 'Not Paid',
+                ]);
+            }
+        }
+
+        return $result;
     }
 
     public function sendReminder()
@@ -177,13 +443,14 @@ class MissingSubmissions extends Component
 
         try {
             // Send email
+            $periodLabel = \Carbon\Carbon::create($this->selectedYear, $this->selectedMonth, 1)->format('F Y');
             Mail::to($this->selectedContractor['email'])->send(
                 new PayrollReminderMail(
                     $this->selectedContractor['name'],
                     $this->selectedContractor['clab_no'],
                     $this->selectedContractor['active_workers'],
                     $this->selectedContractor['total_workers'],
-                    now()->format('F Y'),
+                    $periodLabel,
                     $this->reminderMessage
                 )
             );
@@ -193,8 +460,8 @@ class MissingSubmissions extends Component
                 'contractor_clab_no' => $this->selectedContractor['clab_no'],
                 'contractor_name' => $this->selectedContractor['name'],
                 'contractor_email' => $this->selectedContractor['email'],
-                'month' => now()->month,
-                'year' => now()->year,
+                'month' => $this->selectedMonth,
+                'year' => $this->selectedYear,
                 'message' => $this->reminderMessage,
                 'sent_by' => auth()->user()->name ?? 'System',
             ]);
@@ -211,10 +478,53 @@ class MissingSubmissions extends Component
         $this->closeRemindModal();
     }
 
+    protected function generateAvailablePeriodsFromSubmissions()
+    {
+        // Get the earliest submission date or go back 12 months from now
+        $earliestSubmission = PayrollSubmission::orderBy('created_at', 'asc')->first();
+        $startDate = $earliestSubmission
+            ? $earliestSubmission->created_at
+            : now()->subMonths(12);
+
+        // Generate years from earliest to current
+        $currentYear = now()->year;
+        $startYear = $startDate->year;
+
+        $this->availableYears = collect(range($startYear, $currentYear))->reverse()->values()->toArray();
+
+        // Months are always 1-12
+        $this->availableMonths = [
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December',
+        ];
+    }
+
+    public function updatedSelectedMonth()
+    {
+        $this->loadMissingContractors();
+        $this->loadHistoricalSummary();
+    }
+
+    public function updatedSelectedYear()
+    {
+        $this->loadMissingContractors();
+        $this->loadHistoricalSummary();
+    }
+
     protected function loadMissingContractors()
     {
-        $currentMonth = now()->month;
-        $currentYear = now()->year;
+        $currentMonth = $this->selectedMonth;
+        $currentYear = $this->selectedYear;
 
         // Get all contractors with active workers
         $contractorsWithActiveWorkers = ContractWorker::active()
@@ -228,42 +538,83 @@ class MissingSubmissions extends Component
             ->groupBy('con_ctr_clab_no')
             ->pluck('count', 'con_ctr_clab_no');
 
-        // Get submitted worker IDs for current month
-        $submittedWorkerIds = PayrollWorker::whereHas('payrollSubmission', function ($query) use ($currentMonth, $currentYear) {
+        // Get submitted AND paid worker IDs for current month
+        $submittedAndPaidWorkerIds = PayrollWorker::whereHas('payrollSubmission', function ($query) use ($currentMonth, $currentYear) {
                 $query->where('month', $currentMonth)
-                      ->where('year', $currentYear);
+                      ->where('year', $currentYear)
+                      ->where('status', 'paid'); // Only count as complete if paid
             })
             ->pluck('worker_id')
             ->unique();
 
-        // Count unsubmitted workers per contractor
-        $unsubmittedWorkerCounts = ContractWorker::active()
-            ->whereNotIn('con_wkr_id', $submittedWorkerIds)
-            ->select('con_ctr_clab_no', \DB::raw('COUNT(*) as count'))
+        // Get submitted but NOT paid worker IDs for current month
+        $submittedButUnpaidWorkerIds = PayrollWorker::whereHas('payrollSubmission', function ($query) use ($currentMonth, $currentYear) {
+                $query->where('month', $currentMonth)
+                      ->where('year', $currentYear)
+                      ->where('status', '!=', 'paid'); // Submitted but not paid
+            })
+            ->pluck('worker_id')
+            ->unique();
+
+        // Count workers by issue type per contractor
+        $contractors = ContractWorker::active()
+            ->select('con_ctr_clab_no')
             ->groupBy('con_ctr_clab_no')
-            ->pluck('count', 'con_ctr_clab_no');
+            ->get();
 
-        // Find contractors with unsubmitted workers
-        $contractorsWithMissingWorkers = $unsubmittedWorkerCounts->keys();
+        $contractorIssues = collect();
 
-        if ($contractorsWithMissingWorkers->isEmpty()) {
+        foreach ($contractors as $contractor) {
+            $clabNo = $contractor->con_ctr_clab_no;
+
+            // Get all active worker IDs for this contractor
+            $activeWorkerIds = ContractWorker::active()
+                ->where('con_ctr_clab_no', $clabNo)
+                ->pluck('con_wkr_id');
+
+            if ($activeWorkerIds->isEmpty()) {
+                continue;
+            }
+
+            // Count workers not submitted at all
+            $notSubmitted = $activeWorkerIds->diff($submittedAndPaidWorkerIds)
+                                           ->diff($submittedButUnpaidWorkerIds)
+                                           ->count();
+
+            // Count workers submitted but not paid
+            $submittedNotPaid = $activeWorkerIds->intersect($submittedButUnpaidWorkerIds)->count();
+
+            // Total workers with issues
+            $totalIssues = $notSubmitted + $submittedNotPaid;
+
+            if ($totalIssues > 0) {
+                $contractorIssues->put($clabNo, [
+                    'total_issues' => $totalIssues,
+                    'not_submitted' => $notSubmitted,
+                    'submitted_not_paid' => $submittedNotPaid,
+                ]);
+            }
+        }
+
+        if ($contractorIssues->isEmpty()) {
             $this->missingContractors = collect();
             return;
         }
 
         // Batch load all users at once
-        $users = User::whereIn('contractor_clab_no', $contractorsWithMissingWorkers)
+        $contractorCLABs = $contractorIssues->keys();
+        $users = User::whereIn('contractor_clab_no', $contractorCLABs)
             ->where('role', 'client')
             ->get()
             ->keyBy('contractor_clab_no');
 
         // Batch load all contractors at once
-        $contractors = Contractor::whereIn('ctr_clab_no', $contractorsWithMissingWorkers)
+        $contractors = Contractor::whereIn('ctr_clab_no', $contractorCLABs)
             ->get()
             ->keyBy('ctr_clab_no');
 
         // Get reminder counts for current month/year
-        $reminderCounts = PayrollReminder::whereIn('contractor_clab_no', $contractorsWithMissingWorkers)
+        $reminderCounts = PayrollReminder::whereIn('contractor_clab_no', $contractorCLABs)
             ->where('month', $currentMonth)
             ->where('year', $currentYear)
             ->select('contractor_clab_no', \DB::raw('COUNT(*) as count'))
@@ -272,11 +623,131 @@ class MissingSubmissions extends Component
 
         // Build result set
         $result = collect();
-        foreach ($contractorsWithMissingWorkers as $clabNo) {
-            $unsubmittedCount = $unsubmittedWorkerCounts->get($clabNo, 0);
+        foreach ($contractorIssues as $clabNo => $issues) {
             $totalCount = $totalActiveWorkers->get($clabNo, 0);
+            $user = $users->get($clabNo);
+            $contractor = $contractors->get($clabNo);
 
-            if ($unsubmittedCount > 0) {
+            $result->push([
+                'clab_no' => $clabNo,
+                'name' => $user
+                    ? ($user->company_name ?? $user->name)
+                    : ($contractor ? $contractor->ctr_comp_name : 'Contractor ' . $clabNo),
+                'email' => $user
+                    ? $user->email
+                    : ($contractor ? $contractor->ctr_email : null),
+                'phone' => $user
+                    ? $user->phone
+                    : ($contractor ? ($contractor->ctr_contact_mobileno ?? $contractor->ctr_telno) : null),
+                'active_workers' => $issues['total_issues'],
+                'total_workers' => $totalCount,
+                'not_submitted' => $issues['not_submitted'],
+                'submitted_not_paid' => $issues['submitted_not_paid'],
+                'reminders_sent' => $reminderCounts->get($clabNo, 0),
+            ]);
+        }
+
+        $this->missingContractors = $result->sortBy('name');
+    }
+
+    protected function loadHistoricalSummary()
+    {
+        // Look back 6 months from selected month/year, but exclude current month
+        $endDate = \Carbon\Carbon::create($this->selectedYear, $this->selectedMonth, 1);
+        $startDate = $endDate->copy()->subMonths(5); // Last 6 months including selected
+
+        // Get current month/year to exclude it
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+
+        // Get all contractors with active workers
+        $allContractors = ContractWorker::active()
+            ->distinct()
+            ->pluck('con_ctr_clab_no')
+            ->unique();
+
+        if ($allContractors->isEmpty()) {
+            $this->historicalSummary = [];
+            return;
+        }
+
+        // Batch load all users and contractors
+        $users = User::whereIn('contractor_clab_no', $allContractors)
+            ->where('role', 'client')
+            ->get()
+            ->keyBy('contractor_clab_no');
+
+        $contractors = Contractor::whereIn('ctr_clab_no', $allContractors)
+            ->get()
+            ->keyBy('ctr_clab_no');
+
+        // Track missing submissions by contractor across the last 6 months
+        $result = collect();
+
+        foreach ($allContractors as $clabNo) {
+            $missingMonths = [];
+            $currentPeriod = $startDate->copy();
+
+            for ($i = 0; $i < 6; $i++) {
+                $month = $currentPeriod->month;
+                $year = $currentPeriod->year;
+
+                // Skip the current month (ongoing period)
+                if ($month === $currentMonth && $year === $currentYear) {
+                    $currentPeriod->addMonth();
+                    continue;
+                }
+
+                // Get active workers for this contractor in this period
+                $activeWorkerIds = ContractWorker::active()
+                    ->where('con_ctr_clab_no', $clabNo)
+                    ->pluck('con_wkr_id');
+
+                if ($activeWorkerIds->isNotEmpty()) {
+                    // Check workers that were submitted AND paid
+                    $submittedAndPaidWorkerIds = PayrollWorker::whereHas('payrollSubmission', function ($query) use ($month, $year) {
+                            $query->where('month', $month)
+                                  ->where('year', $year)
+                                  ->where('status', 'paid'); // Only count if paid
+                        })
+                        ->whereIn('worker_id', $activeWorkerIds)
+                        ->pluck('worker_id')
+                        ->unique();
+
+                    // If not all workers were submitted and paid, mark as having issues
+                    if ($submittedAndPaidWorkerIds->count() < $activeWorkerIds->count()) {
+                        // Count workers submitted but not paid
+                        $submittedButUnpaidWorkerIds = PayrollWorker::whereHas('payrollSubmission', function ($query) use ($month, $year) {
+                                $query->where('month', $month)
+                                      ->where('year', $year)
+                                      ->where('status', '!=', 'paid');
+                            })
+                            ->whereIn('worker_id', $activeWorkerIds)
+                            ->pluck('worker_id')
+                            ->unique();
+
+                        $notSubmittedCount = $activeWorkerIds->diff($submittedAndPaidWorkerIds)
+                                                             ->diff($submittedButUnpaidWorkerIds)
+                                                             ->count();
+                        $notPaidCount = $submittedButUnpaidWorkerIds->count();
+
+                        $missingMonths[] = [
+                            'month' => $month,
+                            'year' => $year,
+                            'label' => $currentPeriod->format('M Y'),
+                            'missing_count' => $activeWorkerIds->count() - $submittedAndPaidWorkerIds->count(),
+                            'total_count' => $activeWorkerIds->count(),
+                            'not_submitted' => $notSubmittedCount,
+                            'not_paid' => $notPaidCount,
+                        ];
+                    }
+                }
+
+                $currentPeriod->addMonth();
+            }
+
+            // Only include contractors with at least 2 missing months
+            if (count($missingMonths) >= 2) {
                 $user = $users->get($clabNo);
                 $contractor = $contractors->get($clabNo);
 
@@ -288,17 +759,13 @@ class MissingSubmissions extends Component
                     'email' => $user
                         ? $user->email
                         : ($contractor ? $contractor->ctr_email : null),
-                    'phone' => $user
-                        ? $user->phone
-                        : ($contractor ? ($contractor->ctr_contact_mobileno ?? $contractor->ctr_telno) : null),
-                    'active_workers' => $unsubmittedCount,
-                    'total_workers' => $totalCount,
-                    'reminders_sent' => $reminderCounts->get($clabNo, 0),
+                    'missing_months' => $missingMonths,
+                    'missing_count' => count($missingMonths),
                 ]);
             }
         }
 
-        $this->missingContractors = $result->sortBy('name');
+        $this->historicalSummary = $result->sortByDesc('missing_count')->values()->toArray();
     }
 
     public function render()

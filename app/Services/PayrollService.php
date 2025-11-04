@@ -43,12 +43,12 @@ class PayrollService
      * Save payroll as DRAFT (not submitted for payment yet)
      * Draft submissions can be edited later before final submission
      */
-    public function savePayrollDraft(string $clabNo, array $workersData): PayrollSubmission
+    public function savePayrollDraft(string $clabNo, array $workersData, ?int $month = null, ?int $year = null): PayrollSubmission
     {
         // Create a NEW draft submission
-        $now = now();
-        $month = $now->month;
-        $year = $now->year;
+        // Use provided month/year or default to current month
+        $month = $month ?? now()->month;
+        $year = $year ?? now()->year;
         // Deadline is the last day of the payroll month
         $deadline = Carbon::create($year, $month, 1)->endOfMonth();
 
@@ -143,12 +143,12 @@ class PayrollService
      * - Previous month OT is INCLUDED in this month's payment
      * - This ensures OT is verified before payment
      */
-    public function savePayrollSubmission(string $clabNo, array $workersData): PayrollSubmission
+    public function savePayrollSubmission(string $clabNo, array $workersData, ?int $month = null, ?int $year = null): PayrollSubmission
     {
         // Create a NEW submission for this batch of workers
-        $now = now();
-        $month = $now->month;
-        $year = $now->year;
+        // Use provided month/year or default to current month
+        $month = $month ?? now()->month;
+        $year = $year ?? now()->year;
         // Deadline is the last day of the payroll month
         $deadline = Carbon::create($year, $month, 1)->endOfMonth();
 

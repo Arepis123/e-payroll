@@ -7,6 +7,28 @@
         </div>
     </div>
 
+    <!-- Past Month Indicator -->
+    @if($targetMonth && $targetYear)
+        <div class="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <flux:icon.information-circle class="size-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <div>
+                        <p class="text-sm font-medium text-blue-900 dark:text-blue-100">
+                            Viewing Past Month: {{ $period['month_name'] }} {{ $period['year'] }}
+                        </p>
+                        <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                            You are submitting payroll for a previous period. Workers shown below were active during this month.
+                        </p>
+                    </div>
+                </div>
+                <flux:button variant="filled" size="sm" href="{{ route('client.timesheet') }}" wire:navigate>
+                    Return to Current Month
+                </flux:button>
+            </div>
+        </div>
+    @endif
+
     @if($successMessage)
         <div class="rounded-lg bg-green-50 dark:bg-green-900/20 p-4 border border-green-200 dark:border-green-800">
             <p class="text-sm text-green-800 dark:text-green-200">{{ $successMessage }}</p>
@@ -19,7 +41,93 @@
         </div>
     @endif
 
-    <!-- Statistics Cards -->
+    <!-- Blocking Alert for Outstanding Issues -->
+    @if($isBlocked)
+        <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
+            <div class="flex items-start gap-3">
+                <flux:icon.lock-closed class="size-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <div class="flex-1">
+                    <h3 class="text-base font-semibold text-red-900 dark:text-red-100">Payroll Submission Blocked</h3>
+                    <p class="text-sm text-red-700 dark:text-red-300 mt-1">
+                        You cannot submit new payroll until the following issues are resolved:
+                    </p>
+                    <div class="mt-3 space-y-3">
+                        @foreach($blockReasons as $reason)
+                            <div class="rounded-lg bg-white dark:bg-zinc-800 p-3 border border-red-200 dark:border-red-800">
+                                <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $reason['message'] }}</p>
+                            </div>
+                        @endforeach
+
+                        <!-- Outstanding Drafts List -->
+                        @if($outstandingDrafts->count() > 0)
+                            <div class="bg-white dark:bg-zinc-800 rounded-lg p-3">
+                                <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">Outstanding Drafts:</p>
+                                <div class="space-y-1.5">
+                                    @foreach($outstandingDrafts as $draft)
+                                        <div class="flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-900 rounded text-sm">
+                                            <div>
+                                                <span class="font-medium text-zinc-900 dark:text-zinc-100">{{ $draft->month_year }}</span>
+                                                <span class="text-xs text-zinc-600 dark:text-zinc-400 ml-2">{{ $draft->total_workers }} workers</span>
+                                            </div>
+                                            <flux:badge color="yellow" size="xs">Draft</flux:badge>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Overdue Payments List -->
+                        @if($overduePayments->count() > 0)
+                            <div class="bg-white dark:bg-zinc-800 rounded-lg p-3">
+                                <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">Overdue Payments:</p>
+                                <div class="space-y-1.5">
+                                    @foreach($overduePayments as $overdue)
+                                        <div class="flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-900 rounded text-sm">
+                                            <div>
+                                                <span class="font-medium text-zinc-900 dark:text-zinc-100">{{ $overdue->month_year }}</span>
+                                                <span class="text-xs text-red-600 dark:text-red-400 ml-2">
+                                                    Overdue since {{ $overdue->payment_deadline->format('M d, Y') }}
+                                                </span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-red-600 dark:text-red-400">RM {{ number_format($overdue->total_with_penalty, 2) }}</span>
+                                                <flux:button variant="primary" size="xs" href="{{ route('client.invoices') }}" wire:navigate>
+                                                    Pay Now
+                                                </flux:button>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Missing Submissions List -->
+                        @if(count($missingSubmissions) > 0)
+                            <div class="bg-white dark:bg-zinc-800 rounded-lg p-3">
+                                <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">Missing Submissions:</p>
+                                <div class="space-y-1.5">
+                                    @foreach($missingSubmissions as $missing)
+                                        <div class="flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-900 rounded text-sm">
+                                            <div>
+                                                <span class="font-medium text-zinc-900 dark:text-zinc-100">{{ $missing->month_year }}</span>
+                                                <span class="text-xs text-zinc-600 dark:text-zinc-400 ml-2">
+                                                    {{ $missing->total_workers }} {{ \Str::plural('worker', $missing->total_workers) }} not submitted
+                                                </span>
+                                            </div>
+                                            <flux:badge color="red" size="xs">No Submission</flux:badge>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </flux:card>
+    @endif
+
+    <!-- Statistics Cards (only show for current month) -->
+    @if(!$targetMonth && !$targetYear)
     <div class="grid gap-4 md:grid-cols-4">
         <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
             <div class="flex items-center justify-between">
@@ -61,8 +169,9 @@
             </div>
         </flux:card>
     </div>
+    @endif
 
-    @if(!$errorMessage)
+    @if(!$errorMessage && !$isBlocked && !$targetMonth && !$targetYear)
     <!-- Current Month Info -->
     <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
         <div class="flex items-center justify-between">
@@ -85,8 +194,10 @@
             @endif
         </div>
     </flux:card>
+    @endif
 
     <!-- Payroll Entry Form -->
+    @if(!$errorMessage && !$isBlocked)
     <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
         <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">{{ $period['month_name'] }} {{ $period['year'] }} - Worker Hours & Overtime</h2>
 
@@ -157,6 +268,7 @@
                                     type="checkbox"
                                     wire:click="toggleWorker('{{ $worker['worker_id'] }}')"
                                     @if(in_array($worker['worker_id'], $selectedWorkers)) checked @endif
+                                    @if($isBlocked) disabled @endif
                                     class="size-4 rounded border-zinc-300 dark:border-zinc-700"
                                 />
                             </td>
@@ -187,6 +299,7 @@
                                     class="w-24"
                                     min="0"
                                     step="0.5"
+                                    :disabled="$isBlocked"
                                 />
                             </td>
                             <td class="py-3 px-2">
@@ -196,6 +309,7 @@
                                     class="w-24"
                                     min="0"
                                     step="0.5"
+                                    :disabled="$isBlocked"
                                 />
                             </td>
                             <td class="py-3 px-2">
@@ -205,11 +319,12 @@
                                     class="w-24"
                                     min="0"
                                     step="0.5"
+                                    :disabled="$isBlocked"
                                 />
                             </td>
                             <td class="py-3 px-2">
                                 <div class="flex flex-col gap-2">
-                                    <flux:button wire:click="openTransactionModal({{ $index }})" variant="filled">
+                                    <flux:button wire:click="openTransactionModal({{ $index }})" variant="filled" :disabled="$isBlocked">
                                         Manage Transactions
                                     </flux:button>
                                     @php
@@ -245,10 +360,10 @@
 
             <!-- Action Buttons -->
             <div class="mt-6 flex justify-end items-center gap-2">
-                <flux:button wire:click="saveDraft" variant="filled">
+                <flux:button wire:click="saveDraft" variant="filled" :disabled="$isBlocked">
                     Save as Draft
                 </flux:button>
-                <flux:button wire:click="submitForPayment" variant="primary">
+                <flux:button wire:click="submitForPayment" variant="primary" :disabled="$isBlocked">
                     Submit for Payment
                 </flux:button>
             </div>

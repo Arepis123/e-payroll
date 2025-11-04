@@ -230,7 +230,7 @@
                             <td colspan="9" class="py-3 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
                                 Total Amount Due:
                             </td>
-                            <td class="py-3 text-right text-base font-bold text-red-600 dark:text-red-400">
+                            <td class="py-3 text-right text-base font-bold text-zinc-900 dark:text-zinc-100">
                                 RM {{ number_format($invoice->grand_total + $invoice->penalty_amount, 2) }}
                             </td>
                         </tr>

@@ -71,6 +71,34 @@ class Invoices extends Component
         $this->resetPage();
     }
 
+    public function finalizeDraft($submissionId)
+    {
+        $clabNo = auth()->user()->contractor_clab_no;
+
+        if (!$clabNo) {
+            session()->flash('error', 'No contractor CLAB number assigned.');
+            return;
+        }
+
+        try {
+            // Find the draft submission
+            $submission = PayrollSubmission::where('id', $submissionId)
+                ->where('contractor_clab_no', $clabNo)
+                ->where('status', 'draft')
+                ->firstOrFail();
+
+            // Update status to pending_payment
+            $submission->update([
+                'status' => 'pending_payment',
+                'submitted_at' => now(),
+            ]);
+
+            session()->flash('success', "Draft for {$submission->month_year} has been finalized and submitted. You can now proceed with payment.");
+        } catch (\Exception $e) {
+            session()->flash('error', 'Failed to finalize draft: ' . $e->getMessage());
+        }
+    }
+
     public function render()
     {
         $clabNo = auth()->user()->contractor_clab_no;

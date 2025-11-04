@@ -144,6 +144,11 @@ class DashboardController extends Controller
         // Get active news items for carousel
         $newsItems = News::active()->get();
 
+        // Get missing/unpaid submissions from past 6 months (excluding current month)
+        $missingSubmissions = $this->getMissingSubmissionsHistory($clabNo, 6);
+        $overduePayments = $this->getOverduePayments($clabNo);
+        $draftSubmissions = $this->getDraftSubmissions($clabNo);
+
         return view('client.dashboard', compact(
             'workers',
             'recentWorkers',
@@ -151,7 +156,170 @@ class DashboardController extends Controller
             'expiringContracts',
             'paymentStats',
             'recentPayments',
-            'newsItems'
+            'newsItems',
+            'missingSubmissions',
+            'overduePayments',
+            'draftSubmissions'
         ));
+    }
+
+    protected function getDraftSubmissions($clabNo)
+    {
+        // Get all draft submissions (not finalized/submitted)
+        $drafts = PayrollSubmission::byContractor($clabNo)
+            ->where('status', 'draft')
+            ->with('workers.worker') // Load workers relationship
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->get();
+
+        return $drafts->map(function($draft) use ($clabNo) {
+            // Get total active workers for that period
+            $activeWorkerIds = \App\Models\ContractWorker::where('con_ctr_clab_no', $clabNo)
+                ->where('con_end', '>=', \Carbon\Carbon::create($draft->year, $draft->month, 1)->startOfMonth()->toDateString())
+                ->where('con_start', '<=', \Carbon\Carbon::create($draft->year, $draft->month, 1)->endOfMonth()->toDateString())
+                ->pluck('con_wkr_id')
+                ->unique();
+
+            // Get workers in draft
+            $draftWorkerIds = $draft->workers->pluck('worker_id');
+
+            // Get workers that have already been paid through finalized submissions for this same period
+            $paidWorkerIds = \App\Models\PayrollWorker::whereHas('payrollSubmission', function ($query) use ($clabNo, $draft) {
+                    $query->where('contractor_clab_no', $clabNo)
+                          ->where('month', $draft->month)
+                          ->where('year', $draft->year)
+                          ->where('status', '!=', 'draft') // Finalized submissions only
+                          ->where('status', 'paid'); // Only paid submissions
+                })
+                ->whereIn('worker_id', $activeWorkerIds)
+                ->pluck('worker_id')
+                ->unique();
+
+            // Get missing workers (not in draft AND not already paid)
+            $missingWorkerIds = $activeWorkerIds->diff($draftWorkerIds)->diff($paidWorkerIds);
+
+            $missingWorkerDetails = \App\Models\ContractWorker::whereIn('con_wkr_id', $missingWorkerIds)
+                ->where('con_ctr_clab_no', $clabNo)
+                ->with('worker')
+                ->get()
+                ->map(function($contractWorker) {
+                    return [
+                        'worker_id' => $contractWorker->con_wkr_id,
+                        'name' => $contractWorker->worker ? $contractWorker->worker->wkr_name : 'Unknown Worker',
+                        'passport' => $contractWorker->worker ? $contractWorker->worker->wkr_passno : ($contractWorker->con_wkr_passno ?? 'N/A'),
+                    ];
+                });
+
+            return [
+                'id' => $draft->id,
+                'month' => $draft->month,
+                'year' => $draft->year,
+                'month_label' => $draft->month_year,
+                'total_workers' => $activeWorkerIds->count(),
+                'draft_workers' => $draftWorkerIds->count(),
+                'paid_workers' => $paidWorkerIds->count(),
+                'missing_workers' => $missingWorkerIds->count(),
+                'missing_worker_details' => $missingWorkerDetails,
+                'created_at' => $draft->created_at,
+            ];
+        })->filter(function($draft) {
+            // Only show drafts that still have workers to submit (either in draft or missing)
+            return ($draft['draft_workers'] + $draft['missing_workers']) > 0;
+        })->values(); // Re-index array after filtering
+    }
+
+    protected function getMissingSubmissionsHistory($clabNo, $monthsBack = 6)
+    {
+        $result = collect();
+        $currentDate = now();
+
+        // Check last N months (excluding current month)
+        for ($i = 1; $i <= $monthsBack; $i++) {
+            $checkDate = $currentDate->copy()->subMonths($i);
+            $month = $checkDate->month;
+            $year = $checkDate->year;
+
+            // Get active workers for that month
+            $activeWorkerIds = \App\Models\ContractWorker::where('con_ctr_clab_no', $clabNo)
+                ->where('con_end', '>=', $checkDate->startOfMonth()->toDateString())
+                ->where('con_start', '<=', $checkDate->endOfMonth()->toDateString())
+                ->pluck('con_wkr_id')
+                ->unique();
+
+            if ($activeWorkerIds->isEmpty()) {
+                continue; // No workers that month, skip
+            }
+
+            // Check if a draft submission exists for that period
+            $draftSubmission = PayrollSubmission::byContractor($clabNo)
+                ->forMonth($month, $year)
+                ->where('status', 'draft')
+                ->first();
+
+            // Skip if draft exists (will show in draft section)
+            if ($draftSubmission) {
+                continue;
+            }
+
+            // Get ALL finalized submissions for this period (there could be multiple)
+            $finalizedSubmissions = PayrollSubmission::byContractor($clabNo)
+                ->forMonth($month, $year)
+                ->where('status', '!=', 'draft')
+                ->get();
+
+            // Get worker IDs that have been submitted in finalized submissions
+            $submittedWorkerIds = collect();
+            foreach ($finalizedSubmissions as $submission) {
+                $workerIds = \App\Models\PayrollWorker::where('payroll_submission_id', $submission->id)
+                    ->pluck('worker_id');
+                $submittedWorkerIds = $submittedWorkerIds->merge($workerIds);
+            }
+            $submittedWorkerIds = $submittedWorkerIds->unique();
+
+            // Calculate missing workers (active workers who were NOT submitted)
+            $missingWorkerIds = $activeWorkerIds->diff($submittedWorkerIds);
+            $missingCount = $missingWorkerIds->count();
+
+            // Only show this period if there are missing workers
+            if ($missingCount > 0) {
+                // Load worker details for missing workers
+                $missingWorkerDetails = \App\Models\ContractWorker::whereIn('con_wkr_id', $missingWorkerIds)
+                    ->where('con_ctr_clab_no', $clabNo)
+                    ->with('worker') // Load worker relationship for names
+                    ->get()
+                    ->map(function($contractWorker) {
+                        return [
+                            'worker_id' => $contractWorker->con_wkr_id,
+                            'name' => $contractWorker->worker ? $contractWorker->worker->wkr_name : 'Unknown Worker',
+                            'passport' => $contractWorker->worker ? $contractWorker->worker->wkr_passno : ($contractWorker->con_wkr_passno ?? 'N/A'),
+                        ];
+                    });
+
+                $result->push([
+                    'month' => $month,
+                    'year' => $year,
+                    'month_label' => $checkDate->format('F Y'),
+                    'total_workers' => $activeWorkerIds->count(),
+                    'submitted_workers' => $submittedWorkerIds->count(),
+                    'missing_workers' => $missingCount,
+                    'missing_worker_details' => $missingWorkerDetails,
+                    'has_submission' => $finalizedSubmissions->count() > 0,
+                    'submission_status' => $finalizedSubmissions->first()?->status ?? null,
+                ]);
+            }
+        }
+
+        return $result;
+    }
+
+    protected function getOverduePayments($clabNo)
+    {
+        return PayrollSubmission::byContractor($clabNo)
+            ->whereNotIn('status', ['paid', 'draft']) // Exclude paid and draft
+            ->where('payment_deadline', '<', now())
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->get();
     }
 }

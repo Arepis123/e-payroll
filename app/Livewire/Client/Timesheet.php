@@ -25,6 +25,17 @@ class Timesheet extends Component
     public $successMessage = '';
     public $errorMessage = '';
 
+    // Allow viewing specific month/year from query parameters
+    public $targetMonth;
+    public $targetYear;
+
+    // Blocking logic for outstanding payments/drafts
+    public $isBlocked = false;
+    public $blockReasons = [];
+    public $outstandingDrafts = [];
+    public $overduePayments = [];
+    public $missingSubmissions = [];
+
     // Transaction management
     public $showTransactionModal = false;
     public $currentWorkerIndex = null;
@@ -41,6 +52,10 @@ class Timesheet extends Component
 
     public function mount()
     {
+        // Check if month/year parameters are passed from query string
+        $this->targetMonth = request()->query('month');
+        $this->targetYear = request()->query('year');
+
         $this->loadData();
     }
 
@@ -53,15 +68,53 @@ class Timesheet extends Component
             return;
         }
 
-        // Get current payroll period info
-        $this->period = $this->payrollService->getCurrentPayrollPeriod();
+        // Check for outstanding drafts and unpaid invoices (only block for current month)
+        // Don't block if viewing a past month to allow catching up
+        $isViewingPastMonth = $this->targetMonth && $this->targetYear;
+        if (!$isViewingPastMonth) {
+            $this->checkOutstandingIssues($clabNo);
+        }
 
-        // Get active contracted workers only
-        $activeWorkers = $this->contractWorkerService->getActiveContractedWorkers($clabNo);
+        // Determine which month/year to load (specific period or current month)
+        if ($this->targetMonth && $this->targetYear) {
+            // Load specific period from query parameters
+            $targetDate = \Carbon\Carbon::create($this->targetYear, $this->targetMonth, 1);
+            $currentMonth = $this->targetMonth;
+            $currentYear = $this->targetYear;
+
+            // Get period info for the target month
+            $this->period = [
+                'month' => $currentMonth,
+                'year' => $currentYear,
+                'month_name' => $targetDate->format('F'),
+                'deadline' => $targetDate->copy()->day(15)->addMonth(),
+                'days_until_deadline' => now()->diffInDays($targetDate->copy()->day(15)->addMonth(), false),
+            ];
+        } else {
+            // Get current payroll period info
+            $this->period = $this->payrollService->getCurrentPayrollPeriod();
+            $currentMonth = now()->month;
+            $currentYear = now()->year;
+        }
+
+        // Get active contracted workers for the target period
+        if ($this->targetMonth && $this->targetYear) {
+            // Get workers who had active contracts during the target month
+            $targetDate = \Carbon\Carbon::create($this->targetYear, $this->targetMonth, 1);
+            $activeWorkers = $this->contractWorkerService->getContractedWorkers($clabNo)
+                ->filter(function($worker) use ($targetDate) {
+                    $contract = $worker->contracts()
+                        ->where('con_end', '>=', $targetDate->startOfMonth()->toDateString())
+                        ->where('con_start', '<=', $targetDate->endOfMonth()->toDateString())
+                        ->first();
+                    return $contract !== null;
+                });
+        } else {
+            // Get currently active contracted workers only
+            $activeWorkers = $this->contractWorkerService->getActiveContractedWorkers($clabNo);
+        }
 
         // Get ALL submissions for this month to find all submitted workers
-        $currentMonth = now()->month;
-        $currentYear = now()->year;
 
         $allSubmissionsThisMonth = PayrollSubmission::where('contractor_clab_no', $clabNo)
             ->where('month', $currentMonth)
@@ -377,9 +430,13 @@ class Timesheet extends Component
         }
 
         try {
+            // Get the month and year from the period being viewed
+            $month = $this->period['month'];
+            $year = $this->period['year'];
+
             if ($action === 'draft') {
-                \Log::info('Calling savePayrollDraft');
-                $submission = $this->payrollService->savePayrollDraft($clabNo, $selectedWorkersData);
+                \Log::info('Calling savePayrollDraft', ['month' => $month, 'year' => $year]);
+                $submission = $this->payrollService->savePayrollDraft($clabNo, $selectedWorkersData, $month, $year);
                 $workerCount = count($selectedWorkersData);
                 $this->successMessage = "Draft saved successfully. {$workerCount} worker(s) included.";
                 \Log::info('Draft saved', ['submission_id' => $submission->id]);
@@ -395,8 +452,8 @@ class Timesheet extends Component
                     ]
                 );
             } else {
-                \Log::info('Calling savePayrollSubmission');
-                $submission = $this->payrollService->savePayrollSubmission($clabNo, $selectedWorkersData);
+                \Log::info('Calling savePayrollSubmission', ['month' => $month, 'year' => $year]);
+                $submission = $this->payrollService->savePayrollSubmission($clabNo, $selectedWorkersData, $month, $year);
                 $workerCount = count($selectedWorkersData);
                 $this->successMessage = "Timesheet submitted successfully for {$submission->month_year}. {$workerCount} worker(s) included. Total amount: RM " . number_format($submission->total_amount, 2);
                 \Log::info('Submission saved', ['submission_id' => $submission->id]);
@@ -420,6 +477,108 @@ class Timesheet extends Component
         } catch (\Exception $e) {
             \Log::error('Failed to save', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             $this->errorMessage = 'Failed to save timesheet: ' . $e->getMessage();
+        }
+    }
+
+    protected function checkOutstandingIssues($clabNo)
+    {
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+        $currentDate = now();
+
+        // Reset blocking state
+        $this->isBlocked = false;
+        $this->blockReasons = [];
+        $this->outstandingDrafts = [];
+        $this->overduePayments = [];
+        $this->missingSubmissions = [];
+
+        // Check for draft submissions (excluding current month)
+        $this->outstandingDrafts = PayrollSubmission::where('contractor_clab_no', $clabNo)
+            ->where('status', 'draft')
+            ->where(function($query) use ($currentMonth, $currentYear) {
+                $query->where('year', '<', $currentYear)
+                      ->orWhere(function($q) use ($currentMonth, $currentYear) {
+                          $q->where('year', '=', $currentYear)
+                            ->where('month', '<', $currentMonth);
+                      });
+            })
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->get();
+
+        // Check for overdue payments (unpaid and past deadline, excluding current month)
+        $this->overduePayments = PayrollSubmission::where('contractor_clab_no', $clabNo)
+            ->whereNotIn('status', ['paid', 'draft'])
+            ->where('payment_deadline', '<', now())
+            ->where(function($query) use ($currentMonth, $currentYear) {
+                $query->where('year', '<', $currentYear)
+                      ->orWhere(function($q) use ($currentMonth, $currentYear) {
+                          $q->where('year', '=', $currentYear)
+                            ->where('month', '<', $currentMonth);
+                      });
+            })
+            ->orderBy('payment_deadline', 'asc')
+            ->get();
+
+        // Check for missing submissions (excluding current month)
+        // Check last 6 months for periods where workers existed but no submission was created
+        for ($i = 1; $i <= 6; $i++) {
+            $checkDate = $currentDate->copy()->subMonths($i);
+            $month = $checkDate->month;
+            $year = $checkDate->year;
+
+            // Get active workers for that month
+            $activeWorkerIds = \App\Models\ContractWorker::where('con_ctr_clab_no', $clabNo)
+                ->where('con_end', '>=', $checkDate->startOfMonth()->toDateString())
+                ->where('con_start', '<=', $checkDate->endOfMonth()->toDateString())
+                ->pluck('con_wkr_id')
+                ->unique();
+
+            if ($activeWorkerIds->isEmpty()) {
+                continue; // No workers that month, skip
+            }
+
+            // Check if ANY submission exists for that period (draft or finalized)
+            $anySubmission = PayrollSubmission::where('contractor_clab_no', $clabNo)
+                ->where('month', $month)
+                ->where('year', $year)
+                ->exists();
+
+            // If no submission exists at all, this is a missing submission
+            if (!$anySubmission) {
+                $this->missingSubmissions[] = (object)[
+                    'month' => $month,
+                    'year' => $year,
+                    'month_year' => $checkDate->format('F Y'),
+                    'total_workers' => $activeWorkerIds->count(),
+                ];
+            }
+        }
+
+        // Determine if blocked
+        if ($this->outstandingDrafts->count() > 0) {
+            $this->isBlocked = true;
+            $this->blockReasons[] = [
+                'type' => 'draft',
+                'message' => 'You have ' . $this->outstandingDrafts->count() . ' unfinalized draft ' . \Str::plural('submission', $this->outstandingDrafts->count()) . ' from previous months that must be completed or deleted before submitting new payroll.',
+            ];
+        }
+
+        if ($this->overduePayments->count() > 0) {
+            $this->isBlocked = true;
+            $this->blockReasons[] = [
+                'type' => 'overdue',
+                'message' => 'You have ' . $this->overduePayments->count() . ' overdue ' . \Str::plural('payment', $this->overduePayments->count()) . ' from previous months that must be paid before submitting new payroll.',
+            ];
+        }
+
+        if (count($this->missingSubmissions) > 0) {
+            $this->isBlocked = true;
+            $this->blockReasons[] = [
+                'type' => 'missing',
+                'message' => 'You have ' . count($this->missingSubmissions) . ' missing payroll ' . \Str::plural('submission', count($this->missingSubmissions)) . ' from previous months that must be submitted before submitting new payroll.',
+            ];
         }
     }
 

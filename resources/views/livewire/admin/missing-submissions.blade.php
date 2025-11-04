@@ -1,23 +1,136 @@
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <!-- Page Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Missing Submissions</h1>
-            <p class="text-sm text-zinc-600 dark:text-zinc-400">Contractors who haven't submitted payroll for {{ now()->format('F Y') }}</p>
+            <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Missing Submissions & Payments</h1>
+            <p class="text-sm text-zinc-600 dark:text-zinc-400">Track contractors with missing submissions or unpaid payroll by period</p>
+        </div>
+
+        <!-- Period Selector -->
+        <div class="flex gap-2 items-center">
+            <flux:select wire:model.live="selectedMonth"  class="w-40">
+                @foreach($availableMonths as $monthNum => $monthName)
+                    <option value="{{ $monthNum }}">{{ $monthName }}</option>
+                @endforeach
+            </flux:select>
+
+            <flux:select wire:model.live="selectedYear"  class="w-28">
+                @foreach($availableYears as $year)
+                    <option value="{{ $year }}">{{ $year }}</option>
+                @endforeach
+            </flux:select>
         </div>
     </div>
 
-    <!-- Statistics Card -->
+    <!-- Historical Summary Section -->
+    @if(count($historicalSummary) > 0)
     <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
+        <div class="flex items-start justify-between gap-4">
+            <div class="flex items-start gap-3 flex-1">
+                <div class="rounded-full bg-red-100 dark:bg-red-900/30 p-2 flex-shrink-0">
+                    <flux:icon.exclamation-circle class="size-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Contractor List With Missing Submissions</h3>
+                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                        {{ count($historicalSummary) }} {{ Str::plural('contractor', count($historicalSummary)) }} with multiple missing submissions or payments in the last 6 months (excluding current month)
+                    </p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <flux:button
+                    wire:click="exportDetailed"
+                    variant="ghost"
+                    size="sm"
+                    icon="arrow-down-tray"
+                    icon-variant="outline"
+                >
+                    Export Details
+                </flux:button>
+                <flux:button
+                    wire:click="toggleHistoricalSummary"
+                    variant="ghost"
+                    size="sm"
+                    :icon="$showHistoricalSummary ? 'chevron-up' : 'chevron-down'"
+                    icon-variant="micro"
+                >
+                    {{ $showHistoricalSummary ? 'Hide' : 'Show' }} Details
+                </flux:button>
+            </div>
+        </div>
+
+        @if($showHistoricalSummary)
+        <div class="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+            <flux:table>
+                <flux:table.columns>
+                    <flux:table.column align="center"><span class="text-center text-xs font-medium text-zinc-600 dark:text-zinc-400">No</span></flux:table.column>
+                    <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Contractor</span></flux:table.column>
+                    <flux:table.column align="center"><span class="text-center text-xs font-medium text-zinc-600 dark:text-zinc-400">Missing Months</span></flux:table.column>
+                    <flux:table.column><span class="text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Periods</span></flux:table.column>
+                </flux:table.columns>
+
+                <flux:table.rows>
+                    @foreach($historicalSummary as $index => $contractor)
+                        <flux:table.rows :key="$contractor['clab_no']">
+                            <flux:table.cell align="center">{{ $index + 1 }}</flux:table.cell>
+
+                            <flux:table.cell variant="strong">
+                                <div>
+                                    <div class="font-medium">{{ $contractor['name'] }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $contractor['clab_no'] }}</div>
+                                </div>
+                            </flux:table.cell>
+
+                            <flux:table.cell align="center">
+                                <flux:badge
+                                    :color="$contractor['missing_count'] >= 4 ? 'red' : ($contractor['missing_count'] >= 3 ? 'orange' : 'yellow')"
+                                    size="sm"
+                                    inset="top bottom"
+                                >
+                                    {{ $contractor['missing_count'] }} of 6
+                                </flux:badge>
+                            </flux:table.cell>
+
+                            <flux:table.cell>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($contractor['missing_months'] as $period)
+                                        <div class="flex flex-col gap-0.5">
+                                            <flux:badge color="zinc" size="xs" inset="top bottom">
+                                                {{ $period['label'] }}: {{ $period['missing_count'] }}/{{ $period['total_count'] }}
+                                            </flux:badge>
+                                            <div class="text-[10px] text-zinc-500 dark:text-zinc-400 ml-1">
+                                                @if($period['not_submitted'] > 0)
+                                                    <span class="text-red-600 dark:text-red-400">{{ $period['not_submitted'] }} not sub.</span>
+                                                @endif
+                                                @if($period['not_paid'] > 0)
+                                                    @if($period['not_submitted'] > 0), @endif
+                                                    <span class="text-amber-600 dark:text-amber-400">{{ $period['not_paid'] }} not paid</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </flux:table.cell>
+                        </flux:table.rows>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+        </div>
+        @endif
+    </flux:card>
+    @endif
+
+    <!-- Statistics Card -->
+    <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg hidden">
         <div class="flex items-center gap-4">
             <div class="rounded-full bg-orange-100 dark:bg-orange-900/30 p-3">
                 <flux:icon.exclamation-triangle class="size-8 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-                <p class="text-sm text-zinc-600 dark:text-zinc-400">Contractors Without Submission</p>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">Contractors With Issues</p>
                 <p class="text-3xl font-bold text-orange-600 dark:text-orange-400">{{ $missingContractors->count() }}</p>
                 <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-                    {{ Str::plural('contractor', $missingContractors->count()) }} with active workers need to submit
+                    Missing submissions or payments for {{ \Carbon\Carbon::create($selectedYear, $selectedMonth, 1)->format('F Y') }}
                 </p>
             </div>
         </div>
@@ -30,7 +143,7 @@
             <div>
                 <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Contractors List</h2>
                 <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-                    Current period: {{ now()->format('F Y') }}
+                    Viewing period: {{ \Carbon\Carbon::create($selectedYear, $selectedMonth, 1)->format('F Y') }}
                 </p>
             </div>
             <div class="flex gap-2">
@@ -38,8 +151,11 @@
                     Refresh
                 </flux:button>
                 @if($missingContractors->count() > 0)
-                    <flux:button variant="ghost" size="sm" icon="arrow-down-tray" icon-variant="outline" wire:click="export">
-                        Export
+                    <flux:button variant="ghost" size="sm" icon="arrow-down-tray" icon-variant="outline" wire:click="exportCurrentPeriodDetailed">
+                        Export Details
+                    </flux:button>
+                    <flux:button variant="ghost" size="sm" icon="document-text" icon-variant="outline" wire:click="export">
+                        Export Summary
                     </flux:button>
                 @endif
             </div>
@@ -92,11 +208,25 @@
                         <flux:table.cell align="center">
                             <div class="flex flex-col items-center gap-1">
                                 <flux:badge color="orange" size="sm" inset="top bottom">
-                                    {{ $contractor['active_workers'] }} of {{ $contractor['total_workers'] }} not submitted
+                                    {{ $contractor['active_workers'] }} of {{ $contractor['total_workers'] }} with issues
                                 </flux:badge>
-                                <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                                    {{ $contractor['total_workers'] - $contractor['active_workers'] }} submitted
-                                </span>
+                                <div class="flex flex-col gap-0.5 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                    @if($contractor['not_submitted'] > 0)
+                                        <span class="text-red-600 dark:text-red-400">
+                                            {{ $contractor['not_submitted'] }} not submitted
+                                        </span>
+                                    @endif
+                                    @if($contractor['submitted_not_paid'] > 0)
+                                        <span class="text-amber-600 dark:text-amber-400">
+                                            {{ $contractor['submitted_not_paid'] }} not paid
+                                        </span>
+                                    @endif
+                                    @if($contractor['total_workers'] - $contractor['active_workers'] > 0)
+                                        <span class="text-green-600 dark:text-green-400">
+                                            {{ $contractor['total_workers'] - $contractor['active_workers'] }} completed
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                         </flux:table.cell>
 
@@ -107,7 +237,7 @@
                                         {{ $contractor['reminders_sent'] }} {{ Str::plural('time', $contractor['reminders_sent']) }}
                                     </flux:badge>
                                     <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                                        This month
+                                        This period
                                     </span>
                                 @else
                                     <flux:badge color="zinc" size="sm" inset="top bottom">
@@ -139,9 +269,9 @@
                 <flux:icon.check-circle class="size-12 text-green-600 dark:text-green-400" />
             </div>
             <div>
-                <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">All Contractors Have Submitted!</h3>
+                <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">All Complete!</h3>
                 <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
-                    Every contractor with active workers has submitted their payroll for {{ now()->format('F Y') }}.
+                    Every contractor with active workers has submitted and paid their payroll for {{ \Carbon\Carbon::create($selectedYear, $selectedMonth, 1)->format('F Y') }}.
                 </p>
             </div>
         </div>
@@ -192,11 +322,17 @@
                         <flux:icon.exclamation-triangle class="size-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-orange-900 dark:text-orange-100">
-                                {{ $selectedContractor['active_workers'] }} of {{ $selectedContractor['total_workers'] }} workers not submitted
+                                {{ $selectedContractor['active_workers'] }} of {{ $selectedContractor['total_workers'] }} workers with issues
                             </p>
-                            <p class="text-xs text-orange-700 dark:text-orange-300">
-                                Pending for {{ now()->format('F Y') }}
-                            </p>
+                            <div class="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                @if($selectedContractor['not_submitted'] > 0)
+                                    <div>{{ $selectedContractor['not_submitted'] }} not submitted</div>
+                                @endif
+                                @if($selectedContractor['submitted_not_paid'] > 0)
+                                    <div>{{ $selectedContractor['submitted_not_paid'] }} submitted but not paid</div>
+                                @endif
+                                <div class="mt-1">Period: {{ \Carbon\Carbon::create($selectedYear, $selectedMonth, 1)->format('F Y') }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
