@@ -109,7 +109,7 @@ class NewsManagement extends Component
 
         // Handle image upload
         if ($this->image) {
-            $imagePath = $this->image->store('news', 'public');
+            $imagePath = $this->image->store('news', 'public_uploads');
             $data['image_path'] = $imagePath;
         }
 

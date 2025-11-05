@@ -159,10 +159,8 @@ class Salary extends Component
             ->where('status', 'paid')
             ->count();
 
-        // Pending submissions
-        $pending = PayrollSubmission::whereYear('created_at', $currentYear)
-            ->whereMonth('created_at', $currentMonth)
-            ->whereIn('status', ['pending_payment', 'draft', 'overdue'])
+        // Pending submissions (all time, not just this month)
+        $pending = PayrollSubmission::whereIn('status', ['pending_payment', 'draft', 'overdue'])
             ->count();
 
         $this->stats = [

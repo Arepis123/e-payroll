@@ -200,7 +200,7 @@ class Invoices extends Component
         // Calculate statistics
         $allSubmissions = PayrollSubmission::where('contractor_clab_no', $clabNo)->get();
 
-        $pendingInvoices = $allSubmissions->whereIn('status', ['pending_payment', 'overdue'])->count();
+        $pendingInvoices = $allSubmissions->whereIn('status', ['draft', 'pending_payment', 'overdue'])->count();
         $paidInvoices = $allSubmissions->where('status', 'paid')->count();
         $totalInvoiced = $allSubmissions->sum('total_with_penalty');
 

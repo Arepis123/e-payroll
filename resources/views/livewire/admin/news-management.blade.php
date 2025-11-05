@@ -35,7 +35,7 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         @if($item->image_path)
-                                            <img src="{{ asset('storage/' . $item->image_path) }}" alt="{{ $item->title }}" class="w-16 h-12 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700">
+                                            <img src="{{ asset('images/uploads/' . $item->image_path) }}" alt="{{ $item->title }}" class="w-16 h-12 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700">
                                         @else
                                             <div class="w-16 h-12 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
                                                 <flux:icon.photo class="size-6 text-zinc-400 dark:text-zinc-600" />
@@ -194,7 +194,7 @@
                                     <div class="mt-4 space-y-2">
                                         <flux:file-item
                                             heading="Current Image"
-                                            image="{{ asset('storage/' . $existing_image_path) }}"
+                                            image="{{ asset('images/uploads/' . $existing_image_path) }}"
                                         >
                                             <x-slot name="actions">
                                                 <flux:file-item.remove wire:click="$set('existing_image_path', '')" />
@@ -202,7 +202,7 @@
                                         </flux:file-item>
                                         @php
                                             try {
-                                                $imagePath = storage_path('app/public/' . $existing_image_path);
+                                                $imagePath = public_path('images/uploads/' . $existing_image_path);
                                                 if (file_exists($imagePath)) {
                                                     $imageInfo = getimagesize($imagePath);
                                                     $width = $imageInfo[0] ?? 0;

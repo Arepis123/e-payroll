@@ -34,10 +34,10 @@
                             @if($news->image_path)
                             <div class="w-full relative group">
                                 <img
-                                    src="{{ asset('storage/' . $news->image_path) }}"
+                                    src="{{ asset('images/uploads/' . $news->image_path) }}"
                                     alt="{{ $news->title }}"
                                     class="w-full h-auto object-cover max-h-96 cursor-pointer transition-opacity hover:opacity-90"
-                                    onclick="const win = window.open('{{ asset('storage/' . $news->image_path) }}', '_blank'); if(win) win.opener = null;"
+                                    onclick="const win = window.open('{{ asset('images/uploads/' . $news->image_path) }}', '_blank'); if(win) win.opener = null;"
                                     title="Click to view full image in new tab"
                                 />
                                 <!-- Zoom hint overlay - centered -->

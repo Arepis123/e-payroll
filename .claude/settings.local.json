@@ -19,7 +19,11 @@
       "Bash(where:*)",
       "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\resources\\views\\emails\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\resources\\views\\emails\")",
       "Bash(Get-Content \"C:\\xampp\\htdocs\\e-payroll\\storage\\logs\\laravel.log\" -Tail 100)",
-      "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\storage\\app\\notifications\\attachments\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\storage\\app\\notifications\\attachments\")"
+      "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\storage\\app\\notifications\\attachments\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\storage\\app\\notifications\\attachments\")",
+      "Bash(dir:*)",
+      "Bash(nul)",
+      "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\")",
+      "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\\news\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\\news\")"
     ],
     "deny": [],
     "ask": []

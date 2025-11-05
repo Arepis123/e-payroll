@@ -126,8 +126,8 @@
         </flux:card>
     @endif
 
-    <!-- Statistics Cards (only show for current month) -->
-    @if(!$targetMonth && !$targetYear)
+    <!-- Statistics Cards (only show for current month and when not blocked) -->
+    @if(!$targetMonth && !$targetYear && !$isBlocked)
     <div class="grid gap-4 md:grid-cols-4">
         <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
             <div class="flex items-center justify-between">
