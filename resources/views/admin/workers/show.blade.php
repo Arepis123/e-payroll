@@ -27,7 +27,7 @@
                 </div>
             </div>
             <div>
-                <flux:button variant="filled" icon="arrow-left" href="{{ route('admin.worker') }}" wire:navigate>
+                <flux:button variant="filled" icon="arrow-left" href="{{ route('workers') }}" wire:navigate>
                     Back to Workers
                 </flux:button>
             </div>

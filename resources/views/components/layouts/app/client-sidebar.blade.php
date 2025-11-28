@@ -7,7 +7,7 @@
         <flux:sidebar sticky collapsible class="bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700">
             <flux:sidebar.header>
                 <flux:sidebar.brand
-                    href="{{ route('client.dashboard') }}"
+                    href="{{ route('dashboard') }}"
                     wire:navigate
                     logo="{{ asset('favicon.svg') }}"
                     logo:dark="{{ asset('favicon.svg') }}"
@@ -21,13 +21,13 @@
                 <div class="px-3 py-2 mt-4 in-data-flux-sidebar-collapsed-desktop:hidden">
                     <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wider">{{ __('MAIN') }}</h3>
                 </div>
-                <flux:sidebar.item icon="house" :href="route('client.dashboard')" :current="request()->routeIs('client.dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
-                <flux:sidebar.item icon="users" :href="route('client.workers')" :current="request()->routeIs('client.workers')" wire:navigate>{{ __('My Workers') }}</flux:sidebar.item>
-                <flux:sidebar.item icon="wallet" :href="route('client.payments')" :current="request()->routeIs('client.payments')" wire:navigate>{{ __('Payments') }}</flux:sidebar.item>
-                <flux:sidebar.item icon="document-text" :href="route('client.invoices')" :current="request()->routeIs('client.invoices')" wire:navigate badge="{{ $unpaidInvoicesCount > 0 ? $unpaidInvoicesCount : null }}">
+                <flux:sidebar.item icon="house" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="users" :href="route('workers')" :current="request()->routeIs('workers')" wire:navigate>{{ __('My Workers') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="wallet" :href="route('payments')" :current="request()->routeIs('payments')" wire:navigate>{{ __('Payments') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="document-text" :href="route('invoices')" :current="request()->routeIs('invoices')" wire:navigate badge="{{ $unpaidInvoicesCount > 0 ? $unpaidInvoicesCount : null }}">
                     {{ __('Invoices') }}
                 </flux:sidebar.item>
-                <flux:sidebar.item icon="calendar" :href="route('client.timesheet')" :current="request()->routeIs('client.timesheet')" wire:navigate badge="{{ $pendingNotifications > 0 ? $pendingNotifications : null }}">
+                <flux:sidebar.item icon="calendar" :href="route('timesheet')" :current="request()->routeIs('timesheet')" wire:navigate badge="{{ $pendingNotifications > 0 ? $pendingNotifications : null }}">
                     {{ __('Timesheet') }}
                 </flux:sidebar.item>
             </flux:sidebar.nav>

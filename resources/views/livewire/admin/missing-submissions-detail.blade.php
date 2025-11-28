@@ -5,7 +5,7 @@
             <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Submission Details</h1>
             <p class="text-sm text-zinc-600 dark:text-zinc-400">Worker submission status for {{ now()->format('F Y') }}</p>
         </div>
-        <flux:button variant="outline" href="{{ route('admin.missing-submissions') }}" wire:navigate>
+        <flux:button variant="outline" href="{{ route('missing-submissions') }}" wire:navigate>
             <flux:icon.arrow-left class="size-4" />
             Back to List
         </flux:button>

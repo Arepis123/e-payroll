@@ -22,7 +22,7 @@
                         </p>
                     </div>
                 </div>
-                <flux:button variant="filled" size="sm" href="{{ route('client.timesheet') }}" wire:navigate>
+                <flux:button variant="filled" size="sm" href="{{ route('timesheet') }}" wire:navigate>
                     Return to Current Month
                 </flux:button>
             </div>
@@ -91,7 +91,7 @@
                                             </div>
                                             <div class="flex items-center gap-2">
                                                 <span class="font-bold text-red-600 dark:text-red-400">RM {{ number_format($overdue->total_with_penalty, 2) }}</span>
-                                                <flux:button variant="primary" size="xs" href="{{ route('client.invoices') }}" wire:navigate>
+                                                <flux:button variant="primary" size="xs" href="{{ route('invoices') }}" wire:navigate>
                                                     Pay Now
                                                 </flux:button>
                                             </div>
@@ -451,11 +451,11 @@
                             <flux:dropdown>
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
                                 <flux:menu>
-                                    <flux:menu.item icon="eye" icon:variant="outline" href="{{ route('client.timesheet.show', $submission->id) }}">View Details</flux:menu.item>
-                                    <flux:menu.item icon="document-text" icon:variant="outline" href="{{ route('client.invoices.show', $submission->id) }}">View Invoice</flux:menu.item>
+                                    <flux:menu.item icon="eye" icon:variant="outline" href="{{ route('timesheet.show', $submission->id) }}">View Details</flux:menu.item>
+                                    <flux:menu.item icon="document-text" icon:variant="outline" href="{{ route('invoices.show', $submission->id) }}">View Invoice</flux:menu.item>
                                     @if($submission->status === 'draft')
                                         <flux:menu.separator />
-                                        <flux:menu.item icon="pencil" icon:variant="outline" href="{{ route('client.timesheet.edit', $submission->id) }}">Edit Draft</flux:menu.item>
+                                        <flux:menu.item icon="pencil" icon:variant="outline" href="{{ route('timesheet.edit', $submission->id) }}">Edit Draft</flux:menu.item>
                                         <flux:menu.item icon="paper-airplane" icon:variant="outline" wire:click="submitDraftForPayment({{ $submission->id }})">Submit for Payment</flux:menu.item>
                                     @endif
                                     @if($submission->status === 'pending_payment' || $submission->status === 'overdue')

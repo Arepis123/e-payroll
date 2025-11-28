@@ -2,7 +2,7 @@
     <!-- Page Header -->
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-            <flux:button variant="ghost" icon="arrow-left" href="{{ route('admin.salary') }}" />
+            <flux:button variant="ghost" icon="arrow-left" href="{{ route('payroll') }}" />
             <div>
                 <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                     Payroll Details #PAY{{ str_pad($submission->id, 6, '0', STR_PAD_LEFT) }}

@@ -225,8 +225,8 @@
                             <flux:dropdown>
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
                                 <flux:menu>
-                                    <flux:menu.item icon="eye" href="{{ route('client.invoices.show', $invoice->id) }}">View Invoice</flux:menu.item>
-                                    <flux:menu.item icon="arrow-down-tray" href="{{ route('client.invoices.download', $invoice->id) }}">Download PDF</flux:menu.item>
+                                    <flux:menu.item icon="eye" href="{{ route('invoices.show', $invoice->id) }}">View Invoice</flux:menu.item>
+                                    <flux:menu.item icon="arrow-down-tray" href="{{ route('invoices.download', $invoice->id) }}">Download PDF</flux:menu.item>
                                     @if($invoice->status === 'draft')
                                         <flux:menu.separator />
                                         <flux:menu.item icon="paper-airplane" wire:click="finalizeDraft({{ $invoice->id }})">Finalize & Submit</flux:menu.item>

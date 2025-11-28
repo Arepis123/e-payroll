@@ -23,7 +23,8 @@
       "Bash(dir:*)",
       "Bash(nul)",
       "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\")",
-      "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\\news\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\\news\")"
+      "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\\news\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\\news\")",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

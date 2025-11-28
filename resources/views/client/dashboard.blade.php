@@ -121,7 +121,7 @@
                                 <span class="font-bold text-red-600 dark:text-red-400">
                                     RM {{ number_format($overdue->total_with_penalty, 2) }}
                                 </span>
-                                <flux:button variant="primary" size="sm" href="{{ route('client.invoices') }}" wire:navigate>
+                                <flux:button variant="primary" size="sm" href="{{ route('invoices') }}" wire:navigate>
                                     Pay Now
                                 </flux:button>
                             </div>
@@ -177,7 +177,7 @@
                                         </p>
                                     </div>
                                 </div>
-                                <flux:button variant="primary" size="sm" href="{{ route('client.invoices.show', $draft['id']) }}" wire:navigate onclick="event.stopPropagation()">
+                                <flux:button variant="primary" size="sm" href="{{ route('invoices.show', $draft['id']) }}" wire:navigate onclick="event.stopPropagation()">
                                     Complete & Submit
                                 </flux:button>
                             </div>
@@ -240,7 +240,7 @@
                                         </p>
                                     </div>
                                 </div>
-                                <flux:button variant="outline" size="sm" href="{{ route('client.timesheet', ['month' => $missing['month'], 'year' => $missing['year']]) }}" wire:navigate onclick="event.stopPropagation()">
+                                <flux:button variant="outline" size="sm" href="{{ route('timesheet', ['month' => $missing['month'], 'year' => $missing['year']]) }}" wire:navigate onclick="event.stopPropagation()">
                                     Submit Now
                                 </flux:button>
                             </button>
@@ -382,7 +382,7 @@
                 <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                     <div class="mb-4 flex items-center justify-between">
                         <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">My Workers</h2>
-                        <flux:button variant="ghost" size="sm" href="{{ route('client.workers') }}" wire:navigate>View all</flux:button>
+                        <flux:button variant="ghost" size="sm" href="{{ route('workers') }}" wire:navigate>View all</flux:button>
                     </div>
 
                     <div class="space-y-3">
@@ -420,7 +420,7 @@
                 <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                     <div class="mb-4 flex items-center justify-between">
                         <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Payment History</h2>
-                        <flux:button variant="ghost" size="sm" href="{{ route('client.payments') }}" wire:navigate>View all</flux:button>
+                        <flux:button variant="ghost" size="sm" href="{{ route('payments') }}" wire:navigate>View all</flux:button>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -475,15 +475,15 @@
                 <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                     <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Quick Actions</h2>
                     <div class="space-y-2">
-                        <flux:button variant="primary" class="w-full" href="{{ route('client.timesheet') }}" wire:navigate>
+                        <flux:button variant="primary" class="w-full" href="{{ route('timesheet') }}" wire:navigate>
                             <flux:icon.calendar class="size-4" />
                             Submit Timesheet
                         </flux:button>
-                        <flux:button variant="outline" class="w-full" href="{{ route('client.workers') }}" wire:navigate>
+                        <flux:button variant="outline" class="w-full" href="{{ route('workers') }}" wire:navigate>
                             <flux:icon.users class="size-4" />
                             View Workers
                         </flux:button>
-                        <flux:button variant="outline" class="w-full" href="{{ route('client.invoices') }}" wire:navigate>
+                        <flux:button variant="outline" class="w-full" href="{{ route('invoices') }}" wire:navigate>
                             <flux:icon.document-text class="size-4" />
                             View Invoices
                         </flux:button>

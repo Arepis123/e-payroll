@@ -115,7 +115,7 @@
                                             size="xs"
                                             icon="eye"
                                             title="View Invoice"
-                                            href="{{ route('client.invoices.show', $invoice->id) }}"
+                                            href="{{ route('invoices.show', $invoice->id) }}"
                                         />
                                     </flux:tooltip>
                                     <flux:tooltip content="Download PDF">
@@ -124,7 +124,7 @@
                                             size="xs"
                                             icon="arrow-down-tray"
                                             title="Download PDF"
-                                            href="{{ route('client.invoices.download', $invoice->id) }}"                                        
+                                            href="{{ route('invoices.download', $invoice->id) }}"                                        
                                         />
                                     </flux:tooltip>
                                     @if($invoice->status === 'pending_payment' || $invoice->status === 'overdue')

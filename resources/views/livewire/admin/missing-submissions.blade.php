@@ -252,7 +252,7 @@
                                 <flux:button variant="ghost" size="sm" icon="bell" icon-variant="outline" wire:click="openRemindModal('{{ $contractor['clab_no'] }}')">
                                     Remind
                                 </flux:button>
-                                <flux:button variant="ghost" size="sm" icon="eye" icon-variant="outline" href="{{ route('admin.missing-submissions.detail', $contractor['clab_no']) }}" wire:navigate>
+                                <flux:button variant="ghost" size="sm" icon="eye" icon-variant="outline" href="{{ route('missing-submissions.detail', $contractor['clab_no']) }}" wire:navigate>
                                     View Details
                                 </flux:button>
                             </div>

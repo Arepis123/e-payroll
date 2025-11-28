@@ -181,7 +181,7 @@
                             <flux:dropdown>
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
                                 <flux:menu>
-                                    <flux:menu.item icon="eye" href="{{ route('admin.salary.detail', $submission->id) }}">View Details</flux:menu.item>
+                                    <flux:menu.item icon="eye" href="{{ route('payroll.detail', $submission->id) }}">View Details</flux:menu.item>
                                     <flux:menu.item icon="clipboard-document-list" wire:click="openPaymentLog({{ $submission->id }})">Payment Log</flux:menu.item>
                                     {{-- @if($submission->payment && $submission->payment->status === 'completed')
                                         <flux:menu.item icon="document">Download Receipt</flux:menu.item>
@@ -307,7 +307,7 @@
                                 <flux:icon.information-circle class="size-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                                 <div class="text-xs text-blue-800 dark:text-blue-200">
                                     <p class="font-medium mb-1">Payment Attempt Tracking</p>
-                                    <p>Each payment attempt is logged separately. Pending payments older than 1 hour are automatically marked as cancelled when a new payment is initiated.</p>
+                                    <p>Each payment attempt is logged separately. Pending payments older than 2 hours are automatically marked as cancelled when a new payment is initiated.</p>
                                 </div>
                             </div>
                         </div>

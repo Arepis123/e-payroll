@@ -95,7 +95,7 @@
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">All Payments</h2>
                 <div class="flex gap-2">
-                    <form method="GET" action="{{ route('client.payments') }}" id="yearFilterForm">
+                    <form method="GET" action="{{ route('payments') }}" id="yearFilterForm">
                         <flux:select variant="listbox" name="year" placeholder="Select year..." size="sm" class="w-auto">
                             @foreach($availableYears as $year)
                                 <flux:select.option value="{{ $year }}" selected="{{ $year == $selectedYear }}">{{ $year }}</flux:select.option>

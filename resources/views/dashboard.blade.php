@@ -57,7 +57,7 @@
                             <p class="text-zinc-600 dark:text-zinc-400 mb-4">
                                 You have <span class="font-bold text-orange-600 dark:text-orange-400 text-xl">7 pending payments</span> that require your attention before the end of this month.
                             </p>
-                            <flux:button variant="primary" href="{{ route('admin.salary') }}" wire:navigate onclick="closeNewsModal()">
+                            <flux:button variant="primary" href="{{ route('payroll') }}" wire:navigate onclick="closeNewsModal()">
                                 <flux:icon.wallet class="size-4" />
                                 View Pending Payments
                             </flux:button>

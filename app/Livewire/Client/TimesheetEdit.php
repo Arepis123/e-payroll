@@ -336,7 +336,7 @@ class TimesheetEdit extends Component
                     'submitted_at' => now(),
                 ]);
                 $workerCount = count($selectedWorkersData);
-                return redirect()->route('client.timesheet')
+                return redirect()->route('timesheet')
                     ->with('success', "Draft submitted successfully for {$submission->month_year}. {$workerCount} worker(s) included. Total amount: RM " . number_format($submission->grand_total, 2));
             } else {
                 // Keep as draft

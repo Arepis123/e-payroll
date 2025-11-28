@@ -37,17 +37,17 @@ class PaymentController extends Controller
 
         // Check if already paid
         if ($submission->status === 'paid') {
-            return redirect()->route('client.timesheet')
+            return redirect()->route('timesheet')
                 ->with('error', 'This payroll has already been paid.');
         }
 
-        // Check if there's a recent pending payment (within last 1 hour)
+        // Check if there's a recent pending payment (within last 2 hours)
         $recentPendingPayment = null;
         if ($submission->payment && $submission->payment->status === 'pending') {
             $paymentAge = $submission->payment->created_at->diffInMinutes(now());
 
-            if ($paymentAge < 60) {
-                // Payment is recent (less than 1 hour old), redirect to existing bill
+            if ($paymentAge < 120) {
+                // Payment is recent (less than 2 hours old), redirect to existing bill
                 $recentPendingPayment = $submission->payment;
             }
         }
@@ -63,7 +63,7 @@ class PaymentController extends Controller
             return redirect($url);
         }
 
-        // If there's an old/expired payment (pending for >30 min, failed, or cancelled),
+        // If there's an old/expired payment (pending for >2 hours, failed, or cancelled),
         // mark it as cancelled and create a new attempt
         if ($submission->payment && in_array($submission->payment->status, ['failed', 'cancelled', 'pending'])) {
             // Mark old payment as cancelled if it's pending

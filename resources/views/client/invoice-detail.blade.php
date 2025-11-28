@@ -7,11 +7,11 @@
                 <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ $invoice->month_year }} Payroll Invoice</p>
             </div>
             <div class="flex gap-2">
-                <flux:button variant="outline" href="{{ route('client.invoices.download', $invoice->id) }}">
+                <flux:button variant="outline" href="{{ route('invoices.download', $invoice->id) }}">
                     <flux:icon.arrow-down-tray class="size-4" />
                     Download PDF
                 </flux:button>
-                <flux:button variant="outline" href="{{ route('client.invoices') }}">
+                <flux:button variant="outline" href="{{ route('invoices') }}">
                     <flux:icon.arrow-left class="size-4" />
                     Back to Invoices
                 </flux:button>

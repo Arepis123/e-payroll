@@ -14,7 +14,7 @@
         <!-- Statistics Cards -->
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <!-- Clients Without Submission -->
-            <a href="{{ route('admin.missing-submissions') }}" wire:navigate>
+            <a href="{{ route('missing-submissions') }}" wire:navigate>
                 <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg cursor-pointer transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-lg">
                     <div class="flex items-center justify-between">
                         <div>
@@ -49,7 +49,7 @@
             </flux:card>
 
             <!-- This Month Payments -->
-            <a href="{{ route('admin.salary') }}" wire:navigate>
+            <a href="{{ route('payroll') }}" wire:navigate>
                 <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg cursor-pointer transition-all duration-300 ease-in-out hover:scale-103 hover:shadow-lg">
                     <div class="flex items-center justify-between">
                         <div>
@@ -129,15 +129,15 @@
                 <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                     <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Quick Actions</h2>
                     <div class="space-y-2">
-                        <flux:button variant="primary" class="w-full" href="{{ route('admin.salary') }}" wire:navigate>
+                        <flux:button variant="primary" class="w-full" href="{{ route('payroll') }}" wire:navigate>
                             <flux:icon.wallet class="size-4" />
                             View Payroll
                         </flux:button>
-                        <flux:button variant="outline" class="w-full" href="{{ route('admin.worker') }}" wire:navigate>
+                        <flux:button variant="outline" class="w-full" href="{{ route('workers') }}" wire:navigate>
                             <flux:icon.users class="size-4" />
                             Manage Workers
                         </flux:button>
-                        <flux:button variant="outline" class="w-full" href="{{ route('admin.notifications') }}" wire:navigate>
+                        <flux:button variant="outline" class="w-full" href="{{ route('notifications') }}" wire:navigate>
                             <flux:icon.bell class="size-4" />
                             View Reminder
                         </flux:button>

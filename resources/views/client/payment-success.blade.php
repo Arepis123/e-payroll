@@ -58,11 +58,11 @@
         </flux:card>
 
         <div class="flex gap-3">
-            <flux:button variant="outline" href="{{ route('client.timesheet') }}">
+            <flux:button variant="outline" href="{{ route('timesheet') }}">
                 <flux:icon.arrow-left class="size-4" />
                 Back to Timesheet
             </flux:button>
-            <flux:button variant="primary" href="{{ route('client.dashboard') }}">
+            <flux:button variant="primary" href="{{ route('dashboard') }}">
                 <flux:icon.home class="size-4" />
                 Go to Dashboard
             </flux:button>
