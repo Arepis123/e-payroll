@@ -26,12 +26,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         abort(403);
     })->name('dashboard');
 
-    // Workers - Admin uses Livewire component, Client uses controller
+    // Workers - Route to Livewire component for admin, controller for client
     Route::get('workers', function (\Illuminate\Http\Request $request) {
+        // Admin and super admin use Livewire component
         if (in_array(auth()->user()->role, ['admin', 'super_admin'])) {
-            return view('admin.worker');
+            return view('admin.workers-live');
         }
 
+        // Client uses controller
         return app(\App\Http\Controllers\Client\WorkersController::class)->index($request);
     })->name('workers');
 
