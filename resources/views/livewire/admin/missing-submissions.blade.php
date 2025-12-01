@@ -3,11 +3,11 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Missing Submissions & Payments</h1>
-            <p class="text-sm text-zinc-600 dark:text-zinc-400">Track contractors with missing submissions or unpaid payroll by period</p>
+            <p class="text-sm text-zinc-600 dark:text-zinc-400">Track contractors with missing submissions or unpaid payroll for {{ \Carbon\Carbon::create($selectedYear, $selectedMonth, 1)->format('F Y') }}</p>
         </div>
 
-        <!-- Period Selector -->
-        <div class="flex gap-2 items-center">
+        <!-- Period Selector - Hidden as per user request (confusing) -->
+        {{-- <div class="flex gap-2 items-center">
             <flux:select wire:model.live="selectedMonth"  class="w-40">
                 @foreach($availableMonths as $monthNum => $monthName)
                     <option value="{{ $monthNum }}">{{ $monthName }}</option>
@@ -19,7 +19,7 @@
                     <option value="{{ $year }}">{{ $year }}</option>
                 @endforeach
             </flux:select>
-        </div>
+        </div> --}}
     </div>
 
     <!-- Historical Summary Section -->
@@ -120,8 +120,8 @@
     </flux:card>
     @endif
 
-    <!-- Statistics Card -->
-    <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg hidden">
+    <!-- Statistics Card - Removed as per user request -->
+    {{-- <flux:card class="p-4 sm:p-6 dark:bg-zinc-900 rounded-lg hidden">
         <div class="flex items-center gap-4">
             <div class="rounded-full bg-orange-100 dark:bg-orange-900/30 p-3">
                 <flux:icon.exclamation-triangle class="size-8 text-orange-600 dark:text-orange-400" />
@@ -134,7 +134,7 @@
                 </p>
             </div>
         </div>
-    </flux:card>
+    </flux:card> --}}
 
     <!-- Contractors Without Submission Table -->
     @if($missingContractors->count() > 0)

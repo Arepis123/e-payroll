@@ -95,4 +95,12 @@ class User extends Authenticatable
     {
         return $this->role === 'client';
     }
+
+    /**
+     * Get all payroll submissions for this contractor
+     */
+    public function payrollSubmissions()
+    {
+        return $this->hasMany(PayrollSubmission::class, 'contractor_clab_no', 'contractor_clab_no');
+    }
 }

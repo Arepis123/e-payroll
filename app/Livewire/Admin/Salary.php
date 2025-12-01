@@ -15,19 +15,19 @@ class Salary extends Component
 
     public $stats = [];
 
-    #[Url]
+    #[Url(except: '')]
     public $contractorFilter = '';
 
-    #[Url]
+    #[Url(except: '')]
     public $statusFilter = '';
 
-    #[Url]
+    #[Url(except: '')]
     public $paymentStatusFilter = '';
 
-    #[Url]
+    #[Url(except: '')]
     public $search = '';
 
-    #[Url]
+    #[Url(except: 1)]
     public $page = 1;
 
     public $contractors = [];

@@ -52,9 +52,9 @@ class InvoiceController extends Controller
     /**
      * Show individual invoice details
      */
-    public function show(Request $request, $id)
+    public function show($id)
     {
-        $clabNo = $request->user()->contractor_clab_no;
+        $clabNo = auth()->user()->contractor_clab_no;
 
         $invoice = PayrollSubmission::with(['workers.transactions', 'payment'])
             ->where('id', $id)
@@ -67,10 +67,10 @@ class InvoiceController extends Controller
     /**
      * Download invoice as PDF
      */
-    public function download(Request $request, $id)
+    public function download($id)
     {
-        $clabNo = $request->user()->contractor_clab_no;
-        $contractor = $request->user();
+        $clabNo = auth()->user()->contractor_clab_no;
+        $contractor = auth()->user();
 
         $invoice = PayrollSubmission::with(['workers.transactions', 'payment'])
             ->where('id', $id)

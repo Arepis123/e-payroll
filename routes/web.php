@@ -80,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('payroll/{id}', \App\Livewire\Admin\SalaryDetail::class)->name('payroll.detail');
         Route::get('missing-submissions', \App\Livewire\Admin\MissingSubmissions::class)->name('missing-submissions');
         Route::get('missing-submissions/{clabNo}', \App\Livewire\Admin\MissingSubmissionsDetail::class)->name('missing-submissions.detail');
+        Route::get('contractors', \App\Livewire\Admin\Contractors::class)->name('contractors');
         Route::get('notifications', \App\Livewire\Admin\Notifications::class)->name('notifications');
         Route::get('news', \App\Livewire\Admin\NewsManagement::class)->name('news');
     });
@@ -121,6 +122,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/salary/{id}', fn($id) => redirect()->route('payroll.detail', $id))->name('admin.salary.detail');
     Route::redirect('/admin/missing-submissions', '/missing-submissions')->name('admin.missing-submissions');
     Route::get('/admin/missing-submissions/{clabNo}', fn($clabNo) => redirect()->route('missing-submissions.detail', $clabNo))->name('admin.missing-submissions.detail');
+    Route::redirect('/admin/contractors', '/contractors')->name('admin.contractors');
     Route::redirect('/admin/invoices', '/invoices')->name('admin.invoices');
     Route::get('/admin/invoices/{id}', fn($id) => redirect()->route('invoices.show', $id))->name('admin.invoices.show');
     Route::get('/admin/invoices/{id}/download', fn($id) => redirect()->route('invoices.download', $id))->name('admin.invoices.download');

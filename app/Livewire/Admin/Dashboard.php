@@ -15,12 +15,30 @@ class Dashboard extends Component
     public $stats = [];
     public $recentPayments = [];
     public $chartData = [];
+    public $contractorStatusChartData = [];
+    public $selectedMonth;
+    public $selectedYear;
 
     public function mount()
     {
+        // Set default to current month/year
+        $this->selectedMonth = now()->month;
+        $this->selectedYear = now()->year;
+
         $this->loadStats();
         $this->loadRecentPayments();
         $this->loadChartData();
+        $this->loadContractorStatusChartData();
+    }
+
+    public function updatedSelectedMonth()
+    {
+        $this->loadContractorStatusChartData();
+    }
+
+    public function updatedSelectedYear()
+    {
+        $this->loadContractorStatusChartData();
     }
 
     protected function loadStats()
@@ -155,6 +173,40 @@ class Dashboard extends Component
             'labels' => $labels,
             'totalPayments' => $totalPayments,
             'numberOfPayments' => $numberOfPayments,
+        ];
+    }
+
+    protected function loadContractorStatusChartData()
+    {
+        // Use selected month/year instead of current
+        $month = $this->selectedMonth;
+        $year = $this->selectedYear;
+
+        // Get all contractors
+        $allContractors = User::where('role', 'client')->get();
+        $totalContractors = $allContractors->count();
+
+        // Contractors who submitted and paid
+        $submittedAndPaid = PayrollSubmission::where('month', $month)
+            ->where('year', $year)
+            ->where('status', 'paid')
+            ->distinct('contractor_clab_no')
+            ->count('contractor_clab_no');
+
+        // Contractors who submitted but not paid
+        $submittedNotPaid = PayrollSubmission::where('month', $month)
+            ->where('year', $year)
+            ->whereIn('status', ['pending_payment', 'overdue'])
+            ->distinct('contractor_clab_no')
+            ->count('contractor_clab_no');
+
+        // Contractors who haven't submitted at all
+        $notSubmitted = $totalContractors - $submittedAndPaid - $submittedNotPaid;
+
+        $this->contractorStatusChartData = [
+            'labels' => ['Submitted & Paid', 'Submitted - Not Paid', 'Not Submitted'],
+            'data' => [$submittedAndPaid, $submittedNotPaid, $notSubmitted],
+            'colors' => ['#10b981', '#f59e0b', '#ef4444'], // green, orange, red
         ];
     }
 

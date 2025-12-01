@@ -30,7 +30,7 @@ class MissingSubmissions extends Component
 
     // Historical tracking
     public $historicalSummary = [];
-    public $showHistoricalSummary = false;
+    public $showHistoricalSummary = true;
 
     public function mount()
     {
