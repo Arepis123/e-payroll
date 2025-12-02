@@ -24,7 +24,8 @@
       "Bash(nul)",
       "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\")",
       "Bash(if not exist \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\\news\" mkdir \"C:\\xampp\\htdocs\\e-payroll\\public\\images\\uploads\\news\")",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(Get-Content \"C:\\xampp\\htdocs\\e-payroll\\resources\\css\\app.css\" -Head 20)"
     ],
     "deny": [],
     "ask": []

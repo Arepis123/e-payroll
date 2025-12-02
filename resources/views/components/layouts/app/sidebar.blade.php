@@ -23,6 +23,7 @@
                 </div>
                 <flux:sidebar.item icon="house" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:sidebar.item>
                 <flux:sidebar.item icon="users" :href="route('workers')" :current="request()->routeIs('workers')" wire:navigate>{{ __('Worker') }}</flux:sidebar.item>
+                <flux:sidebar.item icon="building-office" :href="route('contractors')" :current="request()->routeIs('contractors')" wire:navigate>{{ __('Contractors') }}</flux:sidebar.item>
                 {{-- <flux:sidebar.item icon="wallet" :href="route('payroll')" :current="request()->routeIs('payroll')" wire:navigate>{{ __('Payroll') }}</flux:sidebar.item> --}}
                 <flux:sidebar.group expandable icon="wallet" heading="Payroll" class="grid">
                     <flux:sidebar.item :href="route('payroll')" :current="request()->routeIs('payroll')" wire:navigate>All submissions</flux:sidebar.item>

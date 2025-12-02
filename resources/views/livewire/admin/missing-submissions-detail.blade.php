@@ -19,9 +19,11 @@
                     <flux:icon.building-office class="size-8 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                    <h2 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{{ $contractor['name'] }}</h2>
-                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">CLAB No: {{ $contractor['clab_no'] }}</p>
+                    <h2 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{{ $contractor['name'] }}</h2>                    
                     <div class="flex gap-4 mt-2">
+                        <div class="flex items-center gap-1">
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">CLAB No: {{ $contractor['clab_no'] }}</p>
+                        </div>                        
                         @if($contractor['email'])
                             <div class="flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400">
                                 <flux:icon.envelope class="size-4" />
@@ -40,9 +42,6 @@
             <div class="text-right">
                 <p class="text-sm text-zinc-600 dark:text-zinc-400">Submission Progress</p>
                 <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ $stats['submission_rate'] }}%</p>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                    {{ $stats['submitted_count'] }} of {{ $stats['total_workers'] }} submitted
-                </p>
             </div>
         </div>
     </flux:card>

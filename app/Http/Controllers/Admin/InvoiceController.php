@@ -9,9 +9,34 @@ use Illuminate\Http\Request;
 class InvoiceController extends Controller
 {
     /**
+     * Display all invoices (Admin can view all invoices from all contractors)
+     */
+    public function index(Request $request)
+    {
+        // Get all submissions (invoices) from all contractors
+        $invoices = PayrollSubmission::with(['payment', 'user'])
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->paginate(15);
+
+        // Calculate statistics
+        $pendingInvoices = PayrollSubmission::whereIn('status', ['pending_payment', 'overdue'])->count();
+        $paidInvoices = PayrollSubmission::where('status', 'paid')->count();
+        $totalInvoiced = PayrollSubmission::sum('total_with_penalty');
+
+        $stats = [
+            'pending_invoices' => $pendingInvoices,
+            'paid_invoices' => $paidInvoices,
+            'total_invoiced' => $totalInvoiced,
+        ];
+
+        return view('admin.invoices', compact('invoices', 'stats'));
+    }
+
+    /**
      * Show individual invoice details (Admin can view any invoice)
      */
-    public function show(Request $request, $id)
+    public function show($id)
     {
         $invoice = PayrollSubmission::with(['workers.transactions', 'payment', 'user'])
             ->where('id', $id)
@@ -23,7 +48,7 @@ class InvoiceController extends Controller
     /**
      * Download invoice as PDF (Admin can download any invoice)
      */
-    public function download(Request $request, $id)
+    public function download($id)
     {
         $invoice = PayrollSubmission::with(['workers.transactions', 'payment', 'user'])
             ->where('id', $id)
