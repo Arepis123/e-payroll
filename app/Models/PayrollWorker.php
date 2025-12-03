@@ -126,7 +126,7 @@ class PayrollWorker extends Model
      * Formula (from FORMULA PENGIRAAN GAJI DAN OVERTIME.csv):
      * - Basic Salary: RM 1,700 minimum
      * - EPF Worker: 2% | EPF Employer: 2%
-     * - SOCSO Worker: 0.5% | SOCSO Employer: 1.75%
+     * - SOCSO Worker: (Follow table provided) | SOCSO Employer: (Follow table provided)
      * - Daily Rate: Basic / 26 days
      * - Hourly Rate: Daily / 8 hours
      * - Weekday OT: Hourly × 1.5

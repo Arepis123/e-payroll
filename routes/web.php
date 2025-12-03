@@ -83,6 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('missing-submissions', \App\Livewire\Admin\MissingSubmissions::class)->name('missing-submissions');
         Route::get('missing-submissions/{clabNo}', \App\Livewire\Admin\MissingSubmissionsDetail::class)->name('missing-submissions.detail');
         Route::get('contractors', \App\Livewire\Admin\Contractors::class)->name('contractors');
+        Route::get('contractors/{clabNo}', \App\Livewire\Admin\ContractorDetail::class)->name('contractors.detail');
         Route::get('notifications', \App\Livewire\Admin\Notifications::class)->name('notifications');
         Route::get('news', \App\Livewire\Admin\NewsManagement::class)->name('news');
     });

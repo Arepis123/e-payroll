@@ -239,9 +239,9 @@
                     <div class="bill-to-section">
                         <div class="bill-to-label">Bill To:</div>
                         <div class="bill-to-content">
-                            <strong>{{ $contractor->company_name ?? $contractor->name }}</strong><br>
-                            CLAB No: {{ $contractor->contractor_clab_no }}<br>
-                            {{ $contractor->email }}
+                            <strong>{{ $contractor ? ($contractor->company_name ?? $contractor->name) : $invoice->contractor_clab_no }}</strong><br>
+                            CLAB No: {{ $invoice->contractor_clab_no }}<br>
+                            {{ $contractor ? $contractor->email : '' }}
                         </div>
                     </div>
                 </td>
@@ -273,11 +273,34 @@
         </table>
 
         <!-- Items Table -->
+        @php
+            // Get previous month's submission to show previous OT being paid this month
+            $previousMonth = $invoice->month - 1;
+            $previousYear = $invoice->year;
+            if ($previousMonth < 1) {
+                $previousMonth = 12;
+                $previousYear--;
+            }
+            $previousSubmission = App\Models\PayrollSubmission::where('contractor_clab_no', $invoice->contractor_clab_no)
+                ->where('month', $previousMonth)
+                ->where('year', $previousYear)
+                ->with('workers')
+                ->first();
+
+            // Create map of worker_id => previous OT
+            $previousOtMap = [];
+            if ($previousSubmission) {
+                foreach ($previousSubmission->workers as $prevWorker) {
+                    $previousOtMap[$prevWorker->worker_id] = $prevWorker->total_ot_pay;
+                }
+            }
+        @endphp
         <table class="items-table">
             <thead>
                 <tr>
                     <th class="worker-name">WORKER</th>
                     <th class="basic-salary">BASIC<br>SALARY</th>
+                    <th class="ot-col">PREV MONTH<br>OT (PAID)</th>
                     <th class="ot-col">OT<br>NORMAL</th>
                     <th class="ot-col">OT<br>REST</th>
                     <th class="ot-col">OT<br>PUBLIC</th>
@@ -290,12 +313,23 @@
             </thead>
             <tbody>
                 @foreach($invoice->workers as $worker)
+                @php
+                    $previousOt = $previousOtMap[$worker->worker_id] ?? 0;
+                @endphp
                 <tr>
                     <td class="worker-name">
                         <div class="description-main">{{ $worker->worker_name }}</div>
                         <div class="description-sub">ID: {{ $worker->worker_id }}</div>
                     </td>
                     <td class="basic-salary">{{ number_format($worker->basic_salary, 2) }}</td>
+                    <td class="ot-col" style="background-color: #e8f5e9;">
+                        @if($previousOt > 0)
+                            <div style="font-weight: bold; color: #2e7d32;">{{ number_format($previousOt, 2) }}</div>
+                            <div class="ot-amount" style="color: #2e7d32;">INCLUDED</div>
+                        @else
+                            <div style="text-align: center;">-</div>
+                        @endif
+                    </td>
                     <td class="ot-col">
                         <div class="ot-hours">{{ $worker->ot_normal_hours }}h</div>
                         <div class="ot-amount">RM {{ number_format($worker->ot_normal_pay, 2) }}</div>
@@ -353,15 +387,11 @@
                 <td style="width: 70%; vertical-align: top; padding-right: 15px;">
                     <!-- Important Notice about OT -->
                     <div style="background-color: #ddeafd; border-left: 4px solid #2b80ff; padding: 5px 8px; margin-bottom: 7px; font-size: 7px; border-top-right-radius: 1px; border-bottom-right-radius: 1px;">
-                        <strong>IMPORTANT - DEFERRED OT PAYMENT:</strong> The overtime hours shown above are recorded for {{ $invoice->month_year }}, but they will be paid in the following month's payroll. This month's payment includes basic salary plus previous month's overtime.
+                        <strong>IMPORTANT - DEFERRED OT PAYMENT:</strong><br>
+                        • <strong>"PREV MONTH OT (PAID)"</strong> column shows last month's overtime that is INCLUDED in this month's payment<br>
+                        • <strong>"OT NORMAL/REST/PUBLIC"</strong> columns show THIS month's overtime hours, which will be PAID NEXT MONTH<br>
+                        • Gross Salary = Basic Salary + Previous Month OT - Advance Payment - Deductions
                     </div>
-
-                    <!-- Payment Method Notice -->
-                    @if($invoice->status !== 'paid')
-                    <div style="background-color: #fef3e0; border-left: 4px solid #ff9800; padding: 5px 8px; margin-bottom: 7px; font-size: 7px; border-top-right-radius: 1px; border-bottom-right-radius: 1px;">
-                        <strong>PAYMENT METHOD INFORMATION:</strong> Payment can only be made using <strong>Online Banking (FPX)</strong> through our secure <strong>Billplz payment gateway</strong>. Credit/debit card payments are not accepted. Please ensure your online banking is activated before proceeding with payment.
-                    </div>
-                    @endif
 
                     <!-- Penalty Notice -->
                     @if($invoice->has_penalty)

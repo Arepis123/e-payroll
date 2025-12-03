@@ -60,7 +60,7 @@
                 @if($statusFilter !== 'all')
                     <flux:badge color="zinc" size="sm">{{ ucfirst($statusFilter) }}</flux:badge>
                 @endif
-                @if($contractorFilter !== 'all')
+                @if($contractor)
                     <flux:badge color="zinc" size="sm">Contractor Selected</flux:badge>
                 @endif
             </div>
@@ -72,7 +72,7 @@
 
                 <!-- Filters Row -->
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
-                    <div class="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div>
                             <flux:input
                                 wire:model.live.debounce.500ms="search"
@@ -83,10 +83,10 @@
                             />
                         </div>
                         <div>
-                            <flux:select variant="listbox" wire:model.live="contractorFilter" size="sm" label="Contractor">
-                                <flux:select.option value="all">All Contractors</flux:select.option>
-                                @foreach($contractors as $contractor)
-                                    <flux:select.option value="{{ $contractor['clab_no'] }}">{{ $contractor['name'] }}</flux:select.option>
+                            <flux:select variant="listbox" wire:model.live="contractor" size="sm" label="Contractor">
+                                <flux:select.option value="">All Contractors</flux:select.option>
+                                @foreach($contractors as $contractorOption)
+                                    <flux:select.option value="{{ $contractorOption['clab_no'] }}">{{ $contractorOption['name'] }}</flux:select.option>
                                 @endforeach
                             </flux:select>
                         </div>
@@ -134,7 +134,7 @@
 
         // Auto-expand if filters are active
         document.addEventListener('DOMContentLoaded', function() {
-            const hasActiveFilters = {{ ($search || $statusFilter !== 'all' || $contractorFilter !== 'all') ? 'true' : 'false' }};
+            const hasActiveFilters = {{ ($search || $statusFilter !== 'all' || $contractor) ? 'true' : 'false' }};
 
             if (hasActiveFilters) {
                 toggleInvoiceFilters();

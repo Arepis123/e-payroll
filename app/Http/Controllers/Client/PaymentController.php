@@ -334,6 +334,7 @@ class PaymentController extends Controller
         $submission = PayrollSubmission::with('payment')->findOrFail($submissionId);
 
         // Payment still pending, check with Billplz first
+        $billPaid = false;
         if ($submission->payment && $submission->payment->billplz_bill_id && $submission->payment->status === 'pending') {
             $bill = $this->billplzService->getBill($submission->payment->billplz_bill_id);
 
@@ -341,6 +342,7 @@ class PaymentController extends Controller
                 // Update payment status
                 $submission->payment->markAsCompleted($bill);
                 $submission->refresh();
+                $billPaid = true;
             }
         }
 
@@ -352,6 +354,10 @@ class PaymentController extends Controller
             } elseif ($submission->payment && $submission->payment->status === 'failed') {
                 return redirect()->route('login')
                     ->with('error', 'Payment failed. Please login to try again.');
+            } elseif ($submission->payment && $submission->payment->status === 'pending' && !$billPaid) {
+                // User returned without paying (cancelled)
+                return redirect()->route('login')
+                    ->with('warning', 'Payment was not completed. Please login to try again.');
             } else {
                 return redirect()->route('login')
                     ->with('info', 'Payment is being processed. Please login to check status.');
@@ -363,7 +369,11 @@ class PaymentController extends Controller
             return view('client.payment-success', compact('submission'));
         } elseif ($submission->payment && $submission->payment->status === 'failed') {
             return view('client.payment-failed', compact('submission'));
+        } elseif ($submission->payment && $submission->payment->status === 'pending' && !$billPaid) {
+            // User returned without completing payment (cancelled)
+            return view('client.payment-cancelled', compact('submission'));
         } else {
+            // Payment is actually being processed (rare case)
             return view('client.payment-pending', compact('submission'));
         }
     }

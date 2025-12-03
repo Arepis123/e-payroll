@@ -134,7 +134,9 @@ This project uses both Flux and Flux Pro (premium UI components). The Flux Pro r
 This system is designed for managing foreign construction worker payroll in Malaysia, following official regulations and formulas.
 
 ### Payment Formula Reference
-The official payment calculation formulas are documented in: `public/FORMULA PENGIRAAN GAJI DAN OVERTIME.csv`
+The official payment calculation formulas are documented in:
+- Overtime formulas: `public/FORMULA PENGIRAAN GAJI DAN OVERTIME.csv`
+- SOCSO contribution table: `public/Kadar_Caruman_Akta_4.pdf`
 
 ### Payment Calculation Service
 Use `App\Services\PaymentCalculatorService` for all salary and overtime calculations. This service implements the official Malaysian labor regulations.
@@ -143,18 +145,24 @@ Use `App\Services\PaymentCalculatorService` for all salary and overtime calculat
 
 **Worker Deductions:**
 - EPF/KWSP (Worker): 2% = RM 34.00
-- PERKESO/SOCSO (Worker): 0.5% = RM 8.50
-- **Total Worker Deductions: RM 42.50**
+- PERKESO/SOCSO (Worker): RM 8.25 (from contribution table)
+- **Total Worker Deductions: RM 42.25**
 
 **Employer Contributions:**
 - EPF/KWSP (Employer): 2% = RM 34.00
-- PERKESO/SOCSO (Employer): 1.75% = RM 29.75
-- **Total Employer Contributions: RM 63.75**
+- PERKESO/SOCSO (Employer): RM 28.85 (from contribution table)
+- **Total Employer Contributions: RM 62.85**
 
 **Payment Breakdown:**
 - **Gaji Pokok (Basic Salary)**: RM 1,700.00
-- **Gaji Bersih (Net Salary)**: RM 1,700.00 - RM 42.50 = **RM 1,657.50** (what worker receives)
-- **Total Payment to CLAB**: RM 1,700.00 + RM 63.75 = **RM 1,763.75** (what system collects)
+- **Gaji Bersih (Net Salary)**: RM 1,700.00 - RM 42.25 = **RM 1,657.75** (what worker receives)
+- **Total Payment to CLAB**: RM 1,700.00 + RM 62.85 = **RM 1,762.85** (what system collects)
+
+**SOCSO Calculation:**
+- SOCSO contributions are **NOT** calculated by percentage
+- Uses official contribution table from `Kadar_Caruman_Akta_4.pdf`
+- Each salary range has specific fixed contribution amounts
+- The service automatically looks up the correct bracket based on salary
 
 ### Overtime Calculation Formulas
 
@@ -212,6 +220,9 @@ $worker->save();
 - The system owner deducts worker EPF/SOCSO from the RM 1,700 and pays the net amount to workers
 - All calculations follow Malaysian labor regulations
 - Use `PaymentCalculatorService` for consistency across the application
+- **EPF** is calculated by percentage: 2% for both worker and employer
+- **SOCSO** uses official contribution table from `Kadar_Caruman_Akta_4.pdf` (not percentage-based)
+- The PaymentCalculatorService automatically handles table lookups for SOCSO contributions
 
 ## Important Configuration
 

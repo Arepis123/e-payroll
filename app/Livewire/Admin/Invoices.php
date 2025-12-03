@@ -16,7 +16,7 @@ class Invoices extends Component
     public $statusFilter = 'all';
 
     #[Url]
-    public $contractorFilter = 'all';
+    public $contractor = '';
 
     #[Url]
     public $year;
@@ -47,7 +47,7 @@ class Invoices extends Component
         $this->resetPage();
     }
 
-    public function updatedContractorFilter()
+    public function updatedContractor()
     {
         $this->resetPage();
     }
@@ -61,7 +61,7 @@ class Invoices extends Component
     {
         $this->search = '';
         $this->statusFilter = 'all';
-        $this->contractorFilter = 'all';
+        $this->contractor = '';
         $this->resetPage();
     }
 
@@ -89,8 +89,8 @@ class Invoices extends Component
             ->with(['user', 'payment']);
 
         // Apply contractor filter
-        if ($this->contractorFilter && $this->contractorFilter !== 'all') {
-            $query->where('contractor_clab_no', $this->contractorFilter);
+        if ($this->contractor) {
+            $query->where('contractor_clab_no', $this->contractor);
         }
 
         $allInvoices = $query->get();
@@ -217,6 +217,6 @@ class Invoices extends Component
             'pagination' => $pagination,
             'availableYears' => $availableYears,
             'contractors' => $contractors,
-        ])->layout('components.layouts.app', ['title' => __('Invoices Management')]);
+        ]);
     }
 }

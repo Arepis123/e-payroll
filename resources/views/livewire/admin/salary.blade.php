@@ -77,7 +77,7 @@
                     />
                 </div>
                 <div>
-                    <flux:select wire:model.live="contractorFilter" variant="listbox" placeholder="Filter by Contractor" size="sm">
+                    <flux:select wire:model.live="contractor" variant="listbox" placeholder="Filter by Contractor" size="sm">
                         <flux:select.option value="">All Contractors</flux:select.option>
                         @foreach($contractors as $clabNo => $name)
                             <flux:select.option value="{{ $clabNo }}">{{ $name }}</flux:select.option>
@@ -193,7 +193,7 @@
                 @empty
                     <flux:table.rows>
                         <flux:table.cell variant="strong" colspan="10" class="text-center">
-                            @if($search || $contractorFilter || $statusFilter || $paymentStatusFilter)
+                            @if($search || $contractor || $statusFilter || $paymentStatusFilter)
                                 No submissions found matching your filters.
                             @else
                                 No payroll submissions have been created yet.

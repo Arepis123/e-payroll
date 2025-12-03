@@ -156,16 +156,12 @@
                             {{ $contractor->total_submissions }}
                         </flux:table.cell>
 
-                        <flux:table.cell class="whitespace-nowrap">
-                            @if($contractor->pending_payments > 0)
-                                <flux:badge color="orange" size="sm" inset="top bottom">{{ $contractor->pending_payments }}</flux:badge>
-                            @else
-                                <span class="text-sm text-zinc-600 dark:text-zinc-400">0</span>
-                            @endif
+                        <flux:table.cell variant="strong" class="whitespace-nowrap">
+                            {{ $contractor->pending_payments }}
                         </flux:table.cell>
 
                         <flux:table.cell variant="strong" class="whitespace-nowrap">
-                            <span class="text-green-600 dark:text-green-400">
+                            <span class="{{ $contractor->total_paid > 0 ? 'text-red-600 dark:text-green-400' : 'text-zinc-600 dark:text-zinc-400' }}">
                                 RM {{ number_format($contractor->total_paid, 2) }}
                             </span>
                         </flux:table.cell>
@@ -180,9 +176,9 @@
                             <flux:dropdown>
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
                                 <flux:menu>
+                                    <flux:menu.item icon="eye" href="{{ route('contractors.detail', $contractor->contractor_clab_no) }}">View Details</flux:menu.item>
                                     <flux:menu.item icon="document-text" href="{{ route('payroll') }}?contractor={{ $contractor->contractor_clab_no }}">View Submissions</flux:menu.item>
                                     <flux:menu.item icon="document" href="{{ route('invoices') }}?contractor={{ $contractor->contractor_clab_no }}">View Invoices</flux:menu.item>
-                                    <flux:menu.item icon="eye" href="#">View Details</flux:menu.item>
                                 </flux:menu>
                             </flux:dropdown>
                         </flux:table.cell>

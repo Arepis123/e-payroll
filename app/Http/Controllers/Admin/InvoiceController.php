@@ -13,24 +13,8 @@ class InvoiceController extends Controller
      */
     public function index(Request $request)
     {
-        // Get all submissions (invoices) from all contractors
-        $invoices = PayrollSubmission::with(['payment', 'user'])
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->paginate(15);
-
-        // Calculate statistics
-        $pendingInvoices = PayrollSubmission::whereIn('status', ['pending_payment', 'overdue'])->count();
-        $paidInvoices = PayrollSubmission::where('status', 'paid')->count();
-        $totalInvoiced = PayrollSubmission::sum('total_with_penalty');
-
-        $stats = [
-            'pending_invoices' => $pendingInvoices,
-            'paid_invoices' => $paidInvoices,
-            'total_invoiced' => $totalInvoiced,
-        ];
-
-        return view('admin.invoices', compact('invoices', 'stats'));
+        // Use a wrapper view that loads the Livewire component
+        return view('admin.invoices-wrapper');
     }
 
     /**

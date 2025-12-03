@@ -16,7 +16,7 @@ class Salary extends Component
     public $stats = [];
 
     #[Url(except: '')]
-    public $contractorFilter = '';
+    public $contractor = '';
 
     #[Url(except: '')]
     public $statusFilter = '';
@@ -79,7 +79,7 @@ class Salary extends Component
         // Prepare filter information for export
         $filters = [
             'search' => $this->search,
-            'contractor' => $this->contractorFilter ? ($this->contractors[$this->contractorFilter] ?? $this->contractorFilter) : null,
+            'contractor' => $this->contractor ? ($this->contractors[$this->contractor] ?? $this->contractor) : null,
             'status' => $this->statusFilter,
             'payment_status' => $this->paymentStatusFilter,
         ];
@@ -114,7 +114,7 @@ class Salary extends Component
         $this->resetPage();
     }
 
-    public function updatingContractorFilter()
+    public function updatingContractor()
     {
         $this->resetPage();
     }
@@ -131,7 +131,7 @@ class Salary extends Component
 
     public function clearFilters()
     {
-        $this->contractorFilter = '';
+        $this->contractor = '';
         $this->statusFilter = '';
         $this->paymentStatusFilter = '';
         $this->search = '';
@@ -199,8 +199,8 @@ class Salary extends Component
         }
 
         // Apply contractor filter
-        if ($this->contractorFilter) {
-            $query->where('contractor_clab_no', $this->contractorFilter);
+        if ($this->contractor) {
+            $query->where('contractor_clab_no', $this->contractor);
         }
 
         // Apply status filter

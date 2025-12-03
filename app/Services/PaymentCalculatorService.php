@@ -16,8 +16,6 @@ class PaymentCalculatorService
     public const MINIMUM_SALARY = 1700.00; // RM 1,700 minimum for foreign workers
     public const EPF_WORKER_RATE = 0.02;   // 2% EPF deduction from worker
     public const EPF_EMPLOYER_RATE = 0.02; // 2% EPF contribution by employer
-    public const SOCSO_WORKER_RATE = 0.005; // 0.5% SOCSO deduction from worker
-    public const SOCSO_EMPLOYER_RATE = 0.0175; // 1.75% SOCSO contribution by employer
 
     // Overtime calculation constants
     public const WORKING_DAYS_PER_MONTH = 26;
@@ -25,6 +23,106 @@ class PaymentCalculatorService
     public const OT_WEEKDAY_MULTIPLIER = 1.5;
     public const OT_REST_DAY_MULTIPLIER = 2.0;
     public const OT_PUBLIC_HOLIDAY_MULTIPLIER = 3.0;
+
+    /**
+     * SOCSO Contribution Table based on Akta Keselamatan Sosial Pekerja (Akta 4)
+     * Reference: Kadar_Caruman_Akta_4.pdf
+     *
+     * Structure: [salary_from, salary_to, employee_contribution, employer_contribution]
+     */
+    public const SOCSO_CONTRIBUTION_TABLE = [
+        [0.00, 30.00, 0.10, 0.40],
+        [30.01, 50.00, 0.20, 0.70],
+        [50.01, 70.00, 0.30, 1.10],
+        [70.01, 100.00, 0.40, 1.50],
+        [100.01, 140.00, 0.60, 2.10],
+        [140.01, 200.00, 0.85, 2.95],
+        [200.01, 300.00, 1.25, 4.35],
+        [300.01, 400.00, 1.75, 6.15],
+        [400.01, 500.00, 2.25, 7.85],
+        [500.01, 600.00, 2.75, 9.65],
+        [600.01, 700.00, 3.25, 11.35],
+        [700.01, 800.00, 3.75, 13.15],
+        [800.01, 900.00, 4.25, 14.85],
+        [900.01, 1000.00, 4.75, 16.65],
+        [1000.01, 1100.00, 5.25, 18.35],
+        [1100.01, 1200.00, 5.75, 20.15],
+        [1200.01, 1300.00, 6.25, 21.85],
+        [1300.01, 1400.00, 6.75, 23.65],
+        [1400.01, 1500.00, 7.25, 25.35],
+        [1500.01, 1600.00, 7.75, 27.15],
+        [1600.01, 1700.00, 8.25, 28.85],
+        [1700.01, 1800.00, 8.75, 30.65],
+        [1800.01, 1900.00, 9.25, 32.35],
+        [1900.01, 2000.00, 9.75, 34.15],
+        [2000.01, 2100.00, 10.25, 35.85],
+        [2100.01, 2200.00, 10.75, 37.65],
+        [2200.01, 2300.00, 11.25, 39.35],
+        [2300.01, 2400.00, 11.75, 41.15],
+        [2400.01, 2500.00, 12.25, 42.85],
+        [2500.01, 2600.00, 12.75, 44.65],
+        [2600.01, 2700.00, 13.25, 46.35],
+        [2700.01, 2800.00, 13.75, 48.15],
+        [2800.01, 2900.00, 14.25, 49.85],
+        [2900.01, 3000.00, 14.75, 51.65],
+        [3000.01, 3100.00, 15.25, 53.35],
+        [3100.01, 3200.00, 15.75, 55.15],
+        [3200.01, 3300.00, 16.25, 56.85],
+        [3300.01, 3400.00, 16.75, 58.65],
+        [3400.01, 3500.00, 17.25, 60.35],
+        [3500.01, 3600.00, 17.75, 62.15],
+        [3600.01, 3700.00, 18.25, 63.85],
+        [3700.01, 3800.00, 18.75, 65.65],
+        [3800.01, 3900.00, 19.25, 67.35],
+        [3900.01, 4000.00, 19.75, 69.15],
+        [4000.01, 4100.00, 20.25, 70.85],
+        [4100.01, 4200.00, 20.75, 72.65],
+        [4200.01, 4300.00, 21.25, 74.35],
+        [4300.01, 4400.00, 21.75, 76.15],
+        [4400.01, 4500.00, 22.25, 77.85],
+        [4500.01, 4600.00, 22.75, 79.65],
+        [4600.01, 4700.00, 23.25, 81.35],
+        [4700.01, 4800.00, 23.75, 83.15],
+        [4800.01, 4900.00, 24.25, 84.85],
+        [4900.01, 5000.00, 24.75, 86.65],
+        [5000.01, 5100.00, 25.25, 88.35],
+        [5100.01, 5200.00, 25.75, 90.15],
+        [5200.01, 5300.00, 26.25, 91.85],
+        [5300.01, 5400.00, 26.75, 93.65],
+        [5400.01, 5500.00, 27.25, 95.35],
+        [5500.01, 5600.00, 27.75, 97.15],
+        [5600.01, 5700.00, 28.25, 98.85],
+        [5700.01, 5800.00, 28.75, 100.65],
+        [5800.01, 5900.00, 29.25, 102.35],
+        [5900.01, 6000.00, 29.75, 104.15],
+        [6000.01, PHP_FLOAT_MAX, 29.75, 104.15], // Maximum contribution for salaries > RM6,000
+    ];
+
+    /**
+     * Find SOCSO contribution bracket for a given salary
+     *
+     * @param float $salary Monthly salary
+     * @return array|null Returns [employee_contribution, employer_contribution] or null if not found
+     */
+    private function getSOCSObracket(float $salary): ?array
+    {
+        foreach (self::SOCSO_CONTRIBUTION_TABLE as $bracket) {
+            [$salaryFrom, $salaryTo, $employeeContribution, $employerContribution] = $bracket;
+
+            if ($salary >= $salaryFrom && $salary <= $salaryTo) {
+                return [
+                    'employee' => $employeeContribution,
+                    'employer' => $employerContribution,
+                ];
+            }
+        }
+
+        // If salary is beyond table range, return maximum contribution
+        return [
+            'employee' => 29.75,
+            'employer' => 104.15,
+        ];
+    }
 
     /**
      * Calculate worker's EPF deduction (2%)
@@ -43,19 +141,23 @@ class PaymentCalculatorService
     }
 
     /**
-     * Calculate worker's SOCSO deduction (0.5%)
+     * Calculate worker's SOCSO deduction based on contribution table
+     * Uses official SOCSO table from Kadar_Caruman_Akta_4.pdf
      */
     public function calculateWorkerSOCSO(float $basicSalary): float
     {
-        return round($basicSalary * self::SOCSO_WORKER_RATE, 2);
+        $bracket = $this->getSOCSObracket($basicSalary);
+        return round($bracket['employee'], 2);
     }
 
     /**
-     * Calculate employer's SOCSO contribution (1.75%)
+     * Calculate employer's SOCSO contribution based on contribution table
+     * Uses official SOCSO table from Kadar_Caruman_Akta_4.pdf
      */
     public function calculateEmployerSOCSO(float $basicSalary): float
     {
-        return round($basicSalary * self::SOCSO_EMPLOYER_RATE, 2);
+        $bracket = $this->getSOCSObracket($basicSalary);
+        return round($bracket['employer'], 2);
     }
 
     /**
