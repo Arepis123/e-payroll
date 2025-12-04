@@ -132,7 +132,7 @@ class Worker extends Model
     public function activeContract()
     {
         return $this->hasOne(ContractWorker::class, 'con_wkr_id', 'wkr_id')
-            ->where('con_end', '>=', now()->toDateString())
+            ->whereDate('con_end', '>=', now()->toDateString())
             ->latest('con_start');
     }
 

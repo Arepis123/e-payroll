@@ -26,22 +26,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         abort(403);
     })->name('dashboard');
 
-    // Workers - Route to Livewire component for admin, controller for client
+    // Workers - Route to Livewire component for all roles
     Route::get('workers', function (\Illuminate\Http\Request $request) {
-        // Admin and super admin use Livewire component
+        // Admin and super admin use admin Livewire component
         if (in_array(auth()->user()->role, ['admin', 'super_admin'])) {
             return view('admin.workers-live');
         }
 
-        // Client uses controller
-        return app(\App\Http\Controllers\Client\WorkersController::class)->index($request);
+        // Client uses client Livewire component
+        return view('client.workers-live');
     })->name('workers');
 
     // Worker Detail - Unified route
-    Route::get('workers/{worker}', function ($worker) {
+    Route::get('workers/{worker}', function (\Illuminate\Http\Request $request, $worker) {
         return match(auth()->user()->role) {
             'admin', 'super_admin' => app(\App\Http\Controllers\Admin\WorkerController::class)->show($worker),
-            'client' => app(\App\Http\Controllers\Client\WorkersController::class)->show($worker),
+            'client' => app(\App\Http\Controllers\Client\WorkersController::class)->show($request, $worker),
             default => abort(403)
         };
     })->name('workers.show');

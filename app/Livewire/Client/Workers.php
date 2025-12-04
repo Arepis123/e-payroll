@@ -3,6 +3,8 @@
 namespace App\Livewire\Client;
 
 use App\Services\ContractWorkerService;
+use App\Exports\WorkersExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Livewire\Component;
 use Livewire\Attributes\Url;
 
@@ -88,6 +90,70 @@ class Workers extends Component
             $this->sortDirection = 'asc';
         }
         $this->resetPage();
+    }
+
+    public function export()
+    {
+        $clabNo = auth()->user()->contractor_clab_no ?? auth()->user()->username;
+
+        if (!$clabNo) {
+            return;
+        }
+
+        // Get all contracted workers with current filters applied
+        $allWorkers = $this->contractWorkerService->getContractedWorkers($clabNo);
+
+        // Apply the same filters as in render()
+        if ($this->search) {
+            $allWorkers = $allWorkers->filter(function($worker) {
+                return str_contains(strtolower($worker->name), strtolower($this->search)) ||
+                       str_contains(strtolower($worker->ic_number), strtolower($this->search)) ||
+                       str_contains(strtolower($worker->wkr_id), strtolower($this->search));
+            });
+        }
+
+        if ($this->status && $this->status !== 'all') {
+            $allWorkers = $allWorkers->filter(function($worker) {
+                if ($this->status === 'active') {
+                    return $worker->contract_info && $worker->contract_info->isActive();
+                } elseif ($this->status === 'inactive') {
+                    return !$worker->contract_info || !$worker->contract_info->isActive();
+                }
+                return true;
+            });
+        }
+
+        if ($this->country && $this->country !== 'all') {
+            $allWorkers = $allWorkers->filter(function($worker) {
+                return $worker->country && $worker->country->cty_code === $this->country;
+            });
+        }
+
+        if ($this->position && $this->position !== 'all') {
+            $allWorkers = $allWorkers->filter(function($worker) {
+                return $worker->workTrade && $worker->workTrade->trade_code === $this->position;
+            });
+        }
+
+        if ($this->expiryStatus && $this->expiryStatus !== 'all') {
+            $allWorkers = $allWorkers->filter(function($worker) {
+                $passportExpired = $worker->wkr_passexp && $worker->wkr_passexp->isPast();
+                $passportExpiringSoon = $worker->wkr_passexp && $worker->wkr_passexp->isFuture() && now()->diffInDays($worker->wkr_passexp, false) <= 60;
+                $permitExpired = $worker->wkr_permitexp && $worker->wkr_permitexp->isPast();
+                $permitExpiringSoon = $worker->wkr_permitexp && $worker->wkr_permitexp->isFuture() && now()->diffInDays($worker->wkr_permitexp, false) <= 30;
+
+                return match($this->expiryStatus) {
+                    'expired' => $passportExpired || $permitExpired,
+                    'expiring_soon' => ($passportExpiringSoon || $permitExpiringSoon) && !$passportExpired && !$permitExpired,
+                    'valid' => !$passportExpired && !$permitExpired && !$passportExpiringSoon && !$permitExpiringSoon,
+                    default => true,
+                };
+            });
+        }
+
+        $fileName = 'workers_' . now()->format('Y-m-d_His') . '.xlsx';
+
+        return Excel::download(new WorkersExport($allWorkers), $fileName);
     }
 
     public function render()

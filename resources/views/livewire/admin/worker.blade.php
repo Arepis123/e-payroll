@@ -197,9 +197,9 @@
                                     <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
                                     <flux:menu>
                                         <flux:menu.item icon="eye" href="{{ route('workers.show', $worker['id']) }}">View Details</flux:menu.item>
-                                        <flux:menu.item icon="pencil">Edit</flux:menu.item>
+                                        {{-- <flux:menu.item icon="pencil">Edit</flux:menu.item>
                                         <flux:menu.separator />
-                                        <flux:menu.item icon="trash" variant="danger">Delete</flux:menu.item>
+                                        <flux:menu.item icon="trash" variant="danger">Delete</flux:menu.item> --}}
                                     </flux:menu>
                                 </flux:dropdown>
                             </flux:table.cell>

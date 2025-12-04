@@ -302,6 +302,56 @@ class ContractWorkerService
     }
 
     /**
+     * Get workers with pending OT from previous month
+     * These are workers who have OT hours recorded in the previous month
+     * that need to be paid in the current month (even if contract ended)
+     */
+    public function getWorkersWithPendingOT(string $clabNo, int $month, int $year): Collection
+    {
+        // Calculate previous month
+        $previousMonth = $month - 1;
+        $previousYear = $year;
+
+        if ($previousMonth < 1) {
+            $previousMonth = 12;
+            $previousYear--;
+        }
+
+        // Get workers who had OT in the previous month's payroll
+        $workersWithOT = \App\Models\PayrollWorker::whereHas('payrollSubmission', function($query) use ($clabNo, $previousMonth, $previousYear) {
+            $query->where('contractor_clab_no', $clabNo)
+                  ->where('month', $previousMonth)
+                  ->where('year', $previousYear);
+        })
+        ->where(function($query) {
+            $query->where('ot_normal_hours', '>', 0)
+                  ->orWhere('ot_rest_hours', '>', 0)
+                  ->orWhere('ot_public_hours', '>', 0);
+        })
+        ->pluck('worker_id')
+        ->unique();
+
+        if ($workersWithOT->isEmpty()) {
+            return collect([]);
+        }
+
+        // Get these workers from Worker model with their contract info
+        return Worker::whereIn('wkr_id', $workersWithOT)
+            ->with(['country', 'workTrade'])
+            ->get()
+            ->map(function($worker) use ($clabNo) {
+                // Attach contract info (most recent contract with this contractor)
+                $contract = ContractWorker::where('con_wkr_id', $worker->wkr_id)
+                    ->where('con_ctr_clab_no', $clabNo)
+                    ->orderBy('con_end', 'desc')
+                    ->first();
+
+                $worker->contract_info = $contract;
+                return $worker;
+            });
+    }
+
+    /**
      * Set custom cache TTL
      */
     public function setCacheTTL(int $seconds): self

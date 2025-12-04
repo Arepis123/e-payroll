@@ -82,7 +82,14 @@ class Worker extends Component
 
     public function export()
     {
-        $allWorkers = $this->getWorkersData();
+        // Get filtered worker IDs
+        $workerData = $this->getWorkersData();
+        $workerIds = $workerData->pluck('id')->toArray();
+
+        // Load actual Worker models with relationships for export
+        $allWorkers = \App\Models\Worker::with(['country', 'workTrade', 'activeContract'])
+            ->whereIn('wkr_id', $workerIds)
+            ->get();
 
         $fileName = 'workers_' . now()->format('Y-m-d_His') . '.xlsx';
 

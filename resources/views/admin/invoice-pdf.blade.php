@@ -300,7 +300,7 @@
                 <tr>
                     <th class="worker-name">WORKER</th>
                     <th class="basic-salary">BASIC<br>SALARY</th>
-                    <th class="ot-col">PREV MONTH<br>OT (PAID)</th>
+                    <th class="ot-col">PREV MONTH<br>OT</th>
                     <th class="ot-col">OT<br>NORMAL</th>
                     <th class="ot-col">OT<br>REST</th>
                     <th class="ot-col">OT<br>PUBLIC</th>
@@ -322,12 +322,12 @@
                         <div class="description-sub">ID: {{ $worker->worker_id }}</div>
                     </td>
                     <td class="basic-salary">{{ number_format($worker->basic_salary, 2) }}</td>
-                    <td class="ot-col" style="background-color: #e8f5e9;">
+                    <td class="ot-col">
                         @if($previousOt > 0)
-                            <div style="font-weight: bold; color: #2e7d32;">{{ number_format($previousOt, 2) }}</div>
-                            <div class="ot-amount" style="color: #2e7d32;">INCLUDED</div>
+                            <div>{{ number_format($previousOt, 2) }}</div>
+                            <div class="ot-amount">Paid now</div>
                         @else
-                            <div style="text-align: center;">-</div>
+                            <div>-</div>
                         @endif
                     </td>
                     <td class="ot-col">
@@ -366,7 +366,7 @@
                                 </div>
                             @endif
                         @else
-                            <div style="text-align: center;">-</div>
+                            <div>-</div>
                         @endif
                     </td>
                     <td class="gross-salary">{{ number_format($worker->gross_salary, 2) }}</td>
@@ -446,8 +446,9 @@
 
         <!-- Signature -->
         <div class="signature-section">
-            <div class="signature-label">Issued by, signature:</div>
-            <div class="signature-line">{{ config('app.name') }}</div>
+            <div class="signature-label" style="font-size: 9px; color: #666; font-style: italic;">
+                This is computer generated. No signature required.
+            </div>
         </div>
 
         <!-- Footer -->

@@ -114,7 +114,10 @@ class ContractWorker extends Model
      */
     public function isActive(): bool
     {
-        return $this->con_end >= now()->toDateString();
+        if (!$this->con_end) {
+            return false;
+        }
+        return $this->con_end->isFuture() || $this->con_end->isToday();
     }
 
     /**
@@ -122,7 +125,7 @@ class ContractWorker extends Model
      */
     public function isExpired(): bool
     {
-        return $this->con_end < now()->toDateString();
+        return $this->con_end && $this->con_end->isPast() && !$this->con_end->isToday();
     }
 
     /**

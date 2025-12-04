@@ -194,7 +194,7 @@
                                 + Service & SST: RM {{ number_format($invoice->service_charge + $invoice->sst, 2) }}
                             </div>
                             <div class="font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
-                                RM {{ number_format($invoice->grand_total, 2) }}
+                                RM {{ number_format($invoice->total_with_penalty, 2) }}
                             </div>
                             @if($invoice->has_penalty)
                                 <span class="text-xs text-red-600 dark:text-red-400">

@@ -109,13 +109,10 @@ class DashboardController extends Controller
             $estimatedUnsubmittedAmount += $paymentCalculator->calculateTotalPaymentToCLAB($basicSalary);
         }
 
-        // Get outstanding balance (all unpaid submissions including drafts)
-        $outstandingBalanceFromSubmissions = PayrollSubmission::byContractor($clabNo)
-            ->whereIn('status', ['draft', 'pending_payment', 'overdue'])
-            ->sum('total_amount');
-
-        // Total outstanding = submitted but unpaid + estimated for unsubmitted workers
-        $outstandingBalance = $outstandingBalanceFromSubmissions + $estimatedUnsubmittedAmount;
+        // Get outstanding balance (only finalized unpaid submissions, excluding drafts)
+        $outstandingBalance = PayrollSubmission::byContractor($clabNo)
+            ->whereIn('status', ['pending_payment', 'overdue'])
+            ->sum('total_with_penalty');
 
         // Get year to date paid amount
         $yearToDatePaid = PayrollSubmission::byContractor($clabNo)

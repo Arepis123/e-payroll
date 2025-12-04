@@ -52,9 +52,12 @@
                         <p class="font-medium">Salary Calculation (Based on RM 1,700 minimum):</p>
                         <div class="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-green-700 dark:text-green-300">
                             <div><strong>Worker Receives:</strong></div>
-                            <div>RM 1,657.50 (Basic - EPF 2% - SOCSO 0.5%)</div>
+                            <div>RM 1,657.50 (RM 1,700 - EPF RM 34 - SOCSO RM 8.50)</div>
                             <div><strong>System Collects:</strong></div>
-                            <div>RM 1,763.75 (Basic + Employer EPF 2% + Employer SOCSO 1.75%)</div>
+                            <div>RM 1,763.75 (RM 1,700 + Employer EPF RM 34 + Employer SOCSO RM 29.75)</div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-green-300 dark:border-green-700 text-xs text-green-700 dark:text-green-300">
+                            <p><strong>Important:</strong> Previous month's OT is added to Basic Salary before EPF/SOCSO calculation. System collects total amount including previous month's OT.</p>
                         </div>
                     </div>
                 </div>
@@ -232,6 +235,9 @@
                     </h2>
                     <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
                         Worker: {{ $workers[$currentWorkerIndex]['worker_name'] ?? 'Unknown' }}
+                    </p>
+                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-0">
+                        Passport: {{ $workers[$currentWorkerIndex]['worker_passport'] ?? 'Unknown' }}
                     </p>
                 </div>
 

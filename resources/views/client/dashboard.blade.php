@@ -90,7 +90,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Dashboard</h1>
-                <p class="text-sm text-zinc-600 dark:text-zinc-400">Welcome back, {{ auth()->user()->company_name ?? auth()->user()->name }}</p>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">Welcome back, {{ auth()->user()->name }}</p>
             </div>
             <div class="text-sm text-zinc-600 dark:text-zinc-400">
                 {{ now()->format('l, F j, Y') }}
@@ -297,19 +297,20 @@
 
         <!-- Statistics Cards -->
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <!-- Total Workers -->
+            <!-- Active Workers -->
             <flux:card class="space-y-2 p-4 sm:p-6 dark:bg-zinc-900 rounded-lg">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-zinc-600 dark:text-zinc-400">My Workers</p>
-                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $stats['total_workers'] }}</p>
+                        <p class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $stats['active_workers'] }}</p>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-500 mt-0.5">Active</p>
                     </div>
-                    <div class="rounded-full bg-blue-100 dark:bg-blue-900/30 p-3">
-                        <flux:icon.users class="size-6 text-blue-600 dark:text-blue-400" />
+                    <div class="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
+                        <flux:icon.users class="size-6 text-green-600 dark:text-green-400" />
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                    <span class="text-green-600 dark:text-green-400">{{ $stats['active_workers'] }} Active</span>
+                    {{-- <span class="text-zinc-600 dark:text-zinc-400">{{ $stats['total_workers'] }} Total Workers</span> --}}
                     @if($stats['expiring_soon'] > 0)
                         <span class="text-zinc-600 dark:text-zinc-400">•</span>
                         <span class="text-orange-600 dark:text-orange-400">{{ $stats['expiring_soon'] }} Expiring Soon</span>
@@ -332,7 +333,7 @@
                     @if($paymentStats['this_month_deadline'])
                         <span class="text-zinc-600 dark:text-zinc-400">Payment deadline: {{ $paymentStats['this_month_deadline']->format('M d') }}</span>
                     @else
-                        <span class="text-zinc-600 dark:text-zinc-400">No submission for this month</span>
+                        <span class="text-xs text-zinc-500 dark:text-zinc-500">No submission for this month</span>
                     @endif
                 </div>
             </flux:card>
@@ -430,6 +431,7 @@
                                     <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Month</th>
                                     <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Amount</th>
                                     <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Workers</th>
+                                    <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Payment</th>
                                     <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Status</th>
                                 </tr>
                             </thead>
@@ -439,11 +441,15 @@
                                         <td class="py-3 text-sm text-zinc-900 dark:text-zinc-100">{{ $payment->month_year }}</td>
                                         <td class="py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
                                             RM {{ number_format($payment->total_with_penalty, 2) }}
-                                            @if($payment->has_penalty)
-                                                <span class="text-xs text-orange-600 dark:text-orange-400">(+8% penalty)</span>
-                                            @endif
                                         </td>
                                         <td class="py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $payment->total_workers }} {{ Str::plural('worker', $payment->total_workers) }}</td>
+                                        <td class="py-3">
+                                            @if($payment->has_penalty)
+                                                <flux:badge color="red" size="sm">Late</flux:badge>
+                                            @else
+                                                <flux:badge color="green" size="sm">Timely</flux:badge>
+                                            @endif
+                                        </td>
                                         <td class="py-3">
                                             @if($payment->status === 'paid')
                                                 <flux:badge color="green" size="sm">Paid</flux:badge>
@@ -458,7 +464,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="py-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+                                        <td colspan="5" class="py-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
                                             No payment history available
                                         </td>
                                     </tr>
@@ -560,11 +566,11 @@
                     <div class="space-y-2 text-sm">
                         <div>
                             <p class="text-zinc-600 dark:text-zinc-400">Company Name</p>
-                            <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ auth()->user()->company_name ?? 'Not set' }}</p>
+                            <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ auth()->user()->name }}</p>
                         </div>
                         <div>
                             <p class="text-zinc-600 dark:text-zinc-400">Contact Person</p>
-                            <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ auth()->user()->name }}</p>
+                            <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ auth()->user()->person_in_charge ?? auth()->user()->name }}</p>
                         </div>
                         <div>
                             <p class="text-zinc-600 dark:text-zinc-400">Email</p>

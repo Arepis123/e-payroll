@@ -109,9 +109,29 @@ class Timesheet extends Component
                         ->first();
                     return $contract !== null;
                 });
+
+            // Also include workers with pending OT from previous month
+            $workersWithPendingOT = $this->contractWorkerService->getWorkersWithPendingOT(
+                $clabNo,
+                $this->targetMonth,
+                $this->targetYear
+            );
+
+            // Merge active workers with workers who have pending OT (remove duplicates)
+            $activeWorkers = $activeWorkers->merge($workersWithPendingOT)->unique('wkr_id')->values();
         } else {
-            // Get currently active contracted workers only
+            // Get currently active contracted workers
             $activeWorkers = $this->contractWorkerService->getActiveContractedWorkers($clabNo);
+
+            // Also include workers with pending OT from previous month (even if contract ended)
+            $workersWithPendingOT = $this->contractWorkerService->getWorkersWithPendingOT(
+                $clabNo,
+                $currentMonth,
+                $currentYear
+            );
+
+            // Merge active workers with workers who have pending OT (remove duplicates)
+            $activeWorkers = $activeWorkers->merge($workersWithPendingOT)->unique('wkr_id')->values();
         }
 
         // Get ALL submissions for this month to find all submitted workers
@@ -158,13 +178,38 @@ class Timesheet extends Component
         ];
 
         // Prepare workers data
-        $this->workers = $remainingWorkers->map(function($worker, $index) {
+        $this->workers = $remainingWorkers->map(function($worker, $index) use ($currentMonth, $currentYear) {
+            // Check if worker has an active contract
+            $hasActiveContract = $worker->contract_info && $worker->contract_info->isActive();
+
+            // If no active contract, set basic salary to 0 (OT payment only)
+            $basicSalary = $hasActiveContract ? ($worker->basic_salary ?? 1700) : 0;
+
+            // Get previous month's OT (to be paid this month)
+            $previousMonth = $currentMonth - 1;
+            $previousYear = $currentYear;
+            if ($previousMonth < 1) {
+                $previousMonth = 12;
+                $previousYear--;
+            }
+
+            $previousMonthPayroll = PayrollWorker::where('worker_id', $worker->wkr_id)
+                ->whereHas('payrollSubmission', function($q) use ($previousMonth, $previousYear) {
+                    $q->where('month', $previousMonth)
+                      ->where('year', $previousYear)
+                      ->where('status', '!=', 'draft');
+                })
+                ->first();
+
+            $previousMonthOT = $previousMonthPayroll ? $previousMonthPayroll->total_ot_pay : 0;
+
             return [
                 'index' => $index,
                 'worker_id' => $worker->wkr_id,
                 'worker_name' => $worker->name,
                 'worker_passport' => $worker->ic_number,
-                'basic_salary' => $worker->basic_salary ?? 1700,
+                'basic_salary' => $basicSalary,
+                'previous_month_ot' => $previousMonthOT,
                 'ot_normal_hours' => 0,
                 'ot_rest_hours' => 0,
                 'ot_public_hours' => 0,
@@ -172,6 +217,8 @@ class Timesheet extends Component
                 'deduction' => 0,
                 'transactions' => [], // Store multiple transactions
                 'included' => true,
+                'ot_payment_only' => !$hasActiveContract, // Flag for OT-only payment
+                'contract_ended' => !$hasActiveContract,
             ];
         })->values()->toArray();
 
@@ -405,11 +452,22 @@ class Timesheet extends Component
                 'workers.*.worker_id' => 'required',
                 'workers.*.worker_name' => 'required|string',
                 'workers.*.worker_passport' => 'required|string',
-                'workers.*.basic_salary' => 'required|numeric|min:1700',
+                'workers.*.basic_salary' => 'required|numeric|min:0',
                 'workers.*.ot_normal_hours' => 'nullable|numeric|min:0',
                 'workers.*.ot_rest_hours' => 'nullable|numeric|min:0',
                 'workers.*.ot_public_hours' => 'nullable|numeric|min:0',
             ]);
+
+            // Additional validation: workers with active contracts must have minimum RM 1,700
+            foreach ($this->workers as $index => $worker) {
+                if (!($worker['contract_ended'] ?? false) && $worker['basic_salary'] < 1700) {
+                    throw new \Exception("Worker {$worker['worker_name']} must have a basic salary of at least RM 1,700.");
+                }
+                // Workers with ended contracts must have exactly RM 0 basic salary
+                if (($worker['contract_ended'] ?? false) && $worker['basic_salary'] != 0) {
+                    throw new \Exception("Worker {$worker['worker_name']} has an ended contract and cannot receive basic salary.");
+                }
+            }
         } catch (\Exception $e) {
             \Log::error('Validation failed', ['error' => $e->getMessage()]);
             $this->errorMessage = 'Validation failed: ' . $e->getMessage();

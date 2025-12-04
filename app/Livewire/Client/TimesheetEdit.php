@@ -61,8 +61,38 @@ class TimesheetEdit extends Component
         // Get current payroll period info
         $this->period = $this->payrollService->getCurrentPayrollPeriod();
 
+        // Get CLAB number for contract checks
+        $clabNo = auth()->user()->contractor_clab_no;
+
         // Prepare workers data with transactions
-        $this->workers = $submission->workers->map(function($draftWorker, $index) {
+        $this->workers = $submission->workers->map(function($draftWorker, $index) use ($clabNo, $submission) {
+            // Get worker model to check contract status
+            $worker = \App\Models\Worker::find($draftWorker->worker_id);
+            $contract = \App\Models\ContractWorker::where('con_wkr_id', $draftWorker->worker_id)
+                ->where('con_ctr_clab_no', $clabNo)
+                ->orderBy('con_end', 'desc')
+                ->first();
+
+            $hasActiveContract = $contract && $contract->isActive();
+
+            // Get previous month's OT
+            $previousMonth = $submission->month - 1;
+            $previousYear = $submission->year;
+            if ($previousMonth < 1) {
+                $previousMonth = 12;
+                $previousYear--;
+            }
+
+            $previousMonthPayroll = \App\Models\PayrollWorker::where('worker_id', $draftWorker->worker_id)
+                ->whereHas('payrollSubmission', function($q) use ($previousMonth, $previousYear) {
+                    $q->where('month', $previousMonth)
+                      ->where('year', $previousYear)
+                      ->where('status', '!=', 'draft');
+                })
+                ->first();
+
+            $previousMonthOT = $previousMonthPayroll ? $previousMonthPayroll->total_ot_pay : 0;
+
             return [
                 'index' => $index,
                 'worker_id' => $draftWorker->worker_id,
@@ -72,6 +102,9 @@ class TimesheetEdit extends Component
                 'ot_normal_hours' => $draftWorker->ot_normal_hours,
                 'ot_rest_hours' => $draftWorker->ot_rest_hours,
                 'ot_public_hours' => $draftWorker->ot_public_hours,
+                'previous_month_ot' => $previousMonthOT,
+                'contract_ended' => !$hasActiveContract,
+                'ot_payment_only' => !$hasActiveContract,
                 'transactions' => $draftWorker->transactions->map(function($txn) {
                     return [
                         'type' => $txn->type,
@@ -240,11 +273,22 @@ class TimesheetEdit extends Component
                 'workers.*.worker_id' => 'required',
                 'workers.*.worker_name' => 'required|string',
                 'workers.*.worker_passport' => 'required|string',
-                'workers.*.basic_salary' => 'required|numeric|min:1700',
+                'workers.*.basic_salary' => 'required|numeric|min:0',
                 'workers.*.ot_normal_hours' => 'nullable|numeric|min:0',
                 'workers.*.ot_rest_hours' => 'nullable|numeric|min:0',
                 'workers.*.ot_public_hours' => 'nullable|numeric|min:0',
             ]);
+
+            // Additional validation: workers with active contracts must have minimum RM 1,700
+            foreach ($this->workers as $index => $worker) {
+                if (!($worker['contract_ended'] ?? false) && $worker['basic_salary'] < 1700) {
+                    throw new \Exception("Worker {$worker['worker_name']} must have a basic salary of at least RM 1,700.");
+                }
+                // Workers with ended contracts must have exactly RM 0 basic salary
+                if (($worker['contract_ended'] ?? false) && $worker['basic_salary'] != 0) {
+                    throw new \Exception("Worker {$worker['worker_name']} has an ended contract and cannot receive basic salary.");
+                }
+            }
         } catch (\Exception $e) {
             $this->errorMessage = 'Validation failed: ' . $e->getMessage();
             return;

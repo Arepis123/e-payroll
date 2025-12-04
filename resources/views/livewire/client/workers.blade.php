@@ -169,8 +169,8 @@
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">All Workers</h2>
                 <div class="flex gap-2">
-                    <flux:button variant="filled" size="sm">
-                        <flux:icon.arrow-down-tray class="size-4" />
+                    <flux:button wire:click="export" variant="filled" size="sm">
+                        <flux:icon.arrow-down-tray class="size-4 inline" />
                         Export
                     </flux:button>
                 </div>
@@ -201,8 +201,8 @@
                         <flux:table.rows :key="$worker->wkr_id">
                             <flux:table.cell>{{ $loop->iteration }}</flux:table.cell>
 
-                            <flux:table.cell variant="strong" class="flex items-center gap-3">
-                                <flux:avatar size="xs" name="{{ $worker->name }}" />
+                            <flux:table.cell variant="strong" class="flex items-center gap-2">
+                                <flux:avatar size="xs" color="auto" name="{{ $worker->name }}" />
                                 {{ $worker->name }}
                             </flux:table.cell>
 
