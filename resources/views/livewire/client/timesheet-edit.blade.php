@@ -98,6 +98,7 @@
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Worker Name</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Employee ID</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Basic Salary</th>
+                            <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">Previous Month OT</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Normal (hrs)</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Rest Day (hrs)</th>
                             <th class="pb-3 text-left text-xs font-medium text-zinc-600 dark:text-zinc-400">OT Public (hrs)</th>
@@ -121,6 +122,11 @@
                                     <div>
                                         <div class="text-sm text-zinc-900 dark:text-zinc-100">{{ $worker['worker_name'] }}</div>
                                         <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $worker['worker_passport'] }}</div>
+                                        @if($worker['contract_ended'] ?? false)
+                                            <div class="text-xs text-orange-600 dark:text-orange-400 mt-0.5">
+                                                Contract Ended - Final OT Payment
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </td>
@@ -132,6 +138,14 @@
                                     class="w-32"
                                     min="1700"
                                     step="0.01"
+                                    readonly
+                                />
+                            </td>
+                            <td class="py-3">
+                                <flux:input
+                                    type="text"
+                                    value="{{ number_format($worker['previous_month_ot'] ?? 0, 2) }}"
+                                    class="w-32 {{ ($worker['previous_month_ot'] ?? 0) > 0 ? 'font-semibold text-green-600 dark:text-green-400' : '' }}"
                                     readonly
                                 />
                             </td>
@@ -164,9 +178,25 @@
                             </td>
                             <td class="py-3 px-2">
                                 <div class="flex flex-col gap-2">
-                                    <flux:button wire:click="openTransactionModal({{ $index }})" variant="filled">
-                                        Manage Transactions
-                                    </flux:button>
+                                    @if($worker['contract_ended'] ?? false)
+                                        <flux:button
+                                            wire:click="openTransactionModal({{ $index }})"
+                                            variant="filled"
+                                            disabled
+                                        >
+                                            Manage Transactions
+                                        </flux:button>
+                                    @else
+                                        <flux:button
+                                            wire:click="openTransactionModal({{ $index }})"
+                                            variant="filled"
+                                        >
+                                            Manage Transactions
+                                        </flux:button>
+                                    @endif
+                                    @if($worker['contract_ended'] ?? false)
+                                        <p class="text-xs text-orange-600 dark:text-orange-400">No transactions for ended contracts</p>
+                                    @endif
                                     @php
                                         $transactions = $worker['transactions'] ?? [];
                                         $advanceCount = collect($transactions)->where('type', 'advance_payment')->count();
